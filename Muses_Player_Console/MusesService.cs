@@ -30,7 +30,14 @@ public class MusesService
     public MusesService()
     {
         ConnectionString = _connectionStringGuest; // default to guest connection
-        Core.Initialize(); // LibVLCSharp init once per app
+        if (OperatingSystem.IsWindows())
+        {
+            Core.Initialize(@"C:\Program Files\VideoLAN\VLC"); // For Window
+        }
+        else
+        {
+            Core.Initialize(); // For Linux
+        }
         _libVlc = new LibVLC();
         _mediaPlayer = new MediaPlayer(_libVlc);
     }
