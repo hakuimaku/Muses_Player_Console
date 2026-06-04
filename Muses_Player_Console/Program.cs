@@ -107,8 +107,8 @@ class Program
 
     public void ProcessAsGuest(MusesService musesService)
     {
-        int choice = -1;
-        while (choice != 0)
+        string choice = string.Empty;
+        while (choice != "0")
         {
             Console.Clear();
             Console.WriteLine();
@@ -118,25 +118,18 @@ class Program
             Console.WriteLine("0. Exit");
             Console.WriteLine("---------------------------------------------");
             Console.Write("Enter your choice: ");
-            string input = Console.ReadLine() ?? string.Empty;
-            if (!int.TryParse(input, out choice))
-            {
-                Console.WriteLine("Invalid input. Please enter a number.");
-                Console.WriteLine("Press any key to continue...");
-                Console.ReadKey();
-                continue;
-            }
+            choice = Console.ReadLine() ?? string.Empty;
 
             switch (choice)
             {
-                case 0:
+                case "0":
                     Console.WriteLine("Exiting the application.");
                     break;
-                case 1:
+                case "1":
                     musesService.GetAllSongs();
                     musesService.PrintAllSongs();
                     break;
-                case 2:
+                case "2":
                     musesService.GetAllArtists();
                     musesService.PrintAllArtists();
                     break;
@@ -153,38 +146,32 @@ class Program
 
     public void ProcessAsArtist(MusesService musesService)
     {
-        int choice = -1;
-        while (choice != 0)
+        string choice = string.Empty;
+        while (choice != "0")
         {
             Console.Clear();
             musesService.PrintArtistInfo();
             Console.WriteLine();
             ArtistMenu();
             Console.Write("Enter your choice: ");
-            string input = Console.ReadLine() ?? string.Empty;
-            if (!int.TryParse(input, out choice))
-            {
-                Console.WriteLine("Invalid input. Please enter a number.");
-                Console.WriteLine("Press any key to continue...");
-                Console.ReadKey();
-                continue;
-            }
+            choice = Console.ReadLine() ?? string.Empty;    
+            
             switch (choice)
             {
-                case 0:
+                case "0":
                     musesService.SwitchToUserMode();
                     return;
-                case 1:
+                case "1":
                     musesService.GetArtistSongs(musesService.Artist.ArtistID);
                     musesService.PrintArtistSongs();
                     break;
-                case 2:
+                case "2":
                     musesService.CreateNewSongInteractive();
                     break;
-                case 3:
+                case "3":
                     musesService.DeleteSongInteractive();
                     break;
-                case 4:
+                case "4":
                     musesService.UpdateSongInteractive();
                     break;
                 default:
@@ -198,60 +185,53 @@ class Program
     }
     public void ProcessAsUser(MusesService musesService)
     {
-        int choice = -1;
-        while (choice != 0)
+        string choice = string.Empty;
+        while (choice != "0")
         {
             Console.Clear();
             musesService.PrintUserInfo();
             Console.WriteLine();
             UserMenu();
             Console.Write("Enter your choice: ");
-            string input = Console.ReadLine() ?? string.Empty;
-            if (!int.TryParse(input, out choice))
-            {
-                Console.WriteLine("Invalid input. Please enter a number.");
-                Console.WriteLine("Press any key to continue...");
-                Console.ReadKey();
-                continue;
-            }
+            choice = Console.ReadLine() ?? string.Empty;
 
             switch (choice)
             {
-                case 0:
+                case "0":
                     Console.WriteLine("Exiting the application.");
                     break;
-                case 1:
+                case "1":
                     musesService.GetAllSongs();
                     musesService.PrintAllSongs();
                     break;
-                case 2:
+                case "2":
                     musesService.GetPlaylists();
                     musesService.PrintPlaylists();
                     break;
-                case 3:
+                case "3":
                     musesService.GetAllArtists();
                     musesService.PrintAllArtists();
                     break;
-                case 4:
+                case "4":
                     musesService.GetPlaylists();
                     musesService.SelectPlaylistToPlay();
                     break;
-                case 5:
+                case "5":
                     musesService.CreateNewPlaylistInteractive();
                     break;
-                case 6:
+                case "6":
                     musesService.AddSongToPlaylistInteractive();
                     break;
-                case 7:
+                case "7":
                     musesService.RemoveSongFromPlaylistInteractive();
                     break;
-                case 8:
+                case "8":
                     musesService.SwapSongsInPlaylistInteractive();
                     break;  
-                case 9: 
+                case "9": 
                     musesService.DeletePlaylistInteractive();
                     break;
-                case 10:
+                case "10":
                     if (musesService.SwitchToArtistMode())
                     {
                         Console.WriteLine("Press any key to continue...");

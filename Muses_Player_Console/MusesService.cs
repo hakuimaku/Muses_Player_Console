@@ -15,12 +15,15 @@ public class MusesService
     private string _connectionStringGuest = "Server=localhost,1433;Database=Muses_DB;User Id=login_guest;Password=GuestPass@123;TrustServerCertificate=True;Encrypt=False;";
     private string _connectionStringUser = "Server=localhost,1433;Database=Muses_DB;User Id=login_user;Password=UserPass@123;TrustServerCertificate=True;Encrypt=False;";
     private string _connectionStringArtist = "Server=localhost,1433;Database=Muses_DB;User Id=login_artist;Password=ArtistPass@123;TrustServerCertificate=True;Encrypt=False;";
-    
+    private string _connectionStringAdmin = "Server=localhost,1433;Database=Muses_DB;User Id=login_admin;Password=AdminPass@123;TrustServerCertificate=True;Encrypt=False;";
+
+        
     public string ConnectionString { get; private set; }
     public User User = new User();
     public Artist Artist = new Artist();
     
     public bool IsLoggedIn;
+    private bool IsAdmin;
     
     public List<Playlist> Playlists = new List<Playlist>();
     public List<Song> Songs = new List<Song>();
@@ -77,6 +80,11 @@ public class MusesService
                     
                     Console.WriteLine("Login successful");
                     Console.WriteLine($"User {dbUsername} logged in successfully");
+
+                    if (User.UserID == "USR0000001")
+                    {
+                        IsAdmin = true;
+                    }
                     
                     return true;
                 }
@@ -376,7 +384,6 @@ public class MusesService
             conn.Close();
         }
     }
-    
     public List<Song> FindSong(string title)
     {
         List<Song> foundSongs = new List<Song>();
@@ -967,6 +974,7 @@ public class MusesService
         Console.WriteLine(deleted ? "Playlist deleted." : "Failed to delete playlist.");
     }
     
+    
     // Artist Interaction
     public bool IsArtist()
     {
@@ -1217,7 +1225,6 @@ public class MusesService
         bool deleted = DeleteSong(chosenSong.SongID, Artist.ArtistID);
         Console.WriteLine(deleted ? "Song deleted successfully." : "Failed to delete song.");
     }
-    
     public bool UpdateSongAudioUrl(string songId, string newAudioUrl, string artistId)
     {
         SqlConnection conn = new SqlConnection(ConnectionString);
