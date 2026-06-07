@@ -30,26 +30,5 @@ namespace Muses_Player_Console
             UserID = userID;
             MySongs = mySongs;
         }
-
-        public void PrintArtist()
-        {
-            Console.WriteLine(
-                $"{ConsoleTableFormatter.PadRightDisplay(ArtistID, artistIdWidth)}" +
-                $"{ConsoleTableFormatter.PadRightDisplay(ArtistName, artistNameWidth)}" +
-                $"{ConsoleTableFormatter.PadRightDisplay(Bio, bioWidth)}"
-            );
-        }
-
-        public void PrintHeader()
-        {
-            // Header
-            Console.WriteLine(
-                $"{ConsoleTableFormatter.PadRightDisplay("ArtistID", artistIdWidth)}" +
-                $"{ConsoleTableFormatter.PadRightDisplay("ArtistName", artistNameWidth)}" +
-                $"{ConsoleTableFormatter.PadRightDisplay("Bio", bioWidth)}"
-            );
-
-            Console.WriteLine(new string('-', artistIdWidth + artistNameWidth + bioWidth));
-        }
     }
 }

@@ -28,27 +28,5 @@ namespace Muses_Player_Console
             IsFavorite = isFavorite;
             UserID = userID;
         }
-
-        public void PrintPlaylist()
-        {
-            Console.WriteLine(
-                $"{ConsoleTableFormatter.PadRightDisplay(PlaylistID, playlistIdWidth)}" +
-                $"{ConsoleTableFormatter.PadRightDisplay(PlaylistName, playlistNameWidth)}" +
-                $"{ConsoleTableFormatter.PadRightDisplay(CreatedDate.ToShortDateString(), createdDateWidth)}" +
-                $"{ConsoleTableFormatter.PadRightDisplay(IsFavorite ? "Yes" : "No", isFavoriteWidth)}"
-            );
-        }
-        
-        public void PrintHeader()
-        {
-            Console.WriteLine(
-                $"{ConsoleTableFormatter.PadRightDisplay("PlaylistID", playlistIdWidth)}" +
-                $"{ConsoleTableFormatter.PadRightDisplay("PlaylistName", playlistNameWidth)}" +
-                $"{ConsoleTableFormatter.PadRightDisplay("CreatedDate", createdDateWidth)}" +
-                $"{ConsoleTableFormatter.PadRightDisplay("IsFavorite", isFavoriteWidth)}"
-            );
-        
-            Console.WriteLine(new string('-', playlistIdWidth + playlistNameWidth + createdDateWidth + isFavoriteWidth));
-        }
     }
 }

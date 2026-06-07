@@ -17,22 +17,4 @@ public class Category
         CategoryID = categoryID;
         CategoryName = categoryName;
     }
-
-    public void PrintCategory()
-    {
-        Console.WriteLine(
-            $"{ConsoleTableFormatter.PadRightDisplay(CategoryID, CategoryIDWidth)}" +
-            $"{ConsoleTableFormatter.PadRightDisplay(CategoryName, CategoryNameWidth)}"
-        );
-    }
-
-    public void PrintHeader()
-    {
-        Console.WriteLine(
-            $"{ConsoleTableFormatter.PadRightDisplay("CategoryID", CategoryIDWidth)}" +
-            $"{ConsoleTableFormatter.PadRightDisplay("CategoryName", CategoryNameWidth)}"
-        );
-        
-        Console.WriteLine(new string('-', CategoryIDWidth + CategoryNameWidth));
-    }
 }
