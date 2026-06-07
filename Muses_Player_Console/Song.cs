@@ -17,7 +17,7 @@ namespace Muses_Player_Console
         public string Categories { get; set; }
         public string ArtistNames { get; set; }
         public int OrderNo { get; set; }
-        
+
         const int songIdWidth = 15;
         const int titleWidth = 40;
         const int durationWidth = 10;
@@ -29,8 +29,10 @@ namespace Muses_Player_Console
         public Song()
         {
         }
-        public Song (string songID, string title, string altTitle, int duration,
-            string audioURL, int playCount, DateTime releaseDate, string categories, string artistNames, int orderNo = 0)
+
+        public Song(string songID, string title, string altTitle, int duration,
+            string audioURL, int playCount, DateTime releaseDate, string categories, string artistNames,
+            int orderNo = 0)
         {
             SongID = songID;
             Title = title;
@@ -42,33 +44,6 @@ namespace Muses_Player_Console
             Categories = categories;
             ArtistNames = artistNames;
             OrderNo = orderNo;
-        }
-
-        public void PrintSong()
-        {
-            Console.WriteLine(
-                $"| {ConsoleTableFormatter.PadRightDisplay(SongID, songIdWidth)}" +
-                $"| {ConsoleTableFormatter.PadRightDisplay(Title, titleWidth)}" +
-                $"| {ConsoleTableFormatter.PadLeftDisplay(Duration.ToString(), durationWidth)}" +
-                $"| {ConsoleTableFormatter.PadLeftDisplay(PlayCount.ToString(), playCountWidth)}" +
-                $"| {ConsoleTableFormatter.PadRightDisplay(ReleaseDate.ToShortDateString(), releaseDateWidth)}" +
-                $"| {ConsoleTableFormatter.PadRightDisplay(ArtistNames, artistWidth)}" +
-                $"| {ConsoleTableFormatter.PadRightDisplay(Categories, categoryWidth)}"
-            );
-        }
-
-        public void PrintHeader()
-        {
-            Console.WriteLine(
-                $"| {ConsoleTableFormatter.PadRightDisplay("SongID", songIdWidth)}" +
-                $"| {ConsoleTableFormatter.PadRightDisplay("Title", titleWidth)}" +
-                $"| {ConsoleTableFormatter.PadLeftDisplay("Duration", durationWidth)}" +
-                $"| {ConsoleTableFormatter.PadLeftDisplay("PlayCount", playCountWidth)}" + 
-                $"| {ConsoleTableFormatter.PadRightDisplay("ReleaseDate", releaseDateWidth)}" +
-                $"| {ConsoleTableFormatter.PadRightDisplay("ArtistNames", artistWidth)}" +
-                $"| {ConsoleTableFormatter.PadRightDisplay("Categories", categoryWidth)}"
-            );
-            Console.WriteLine(new string('-', songIdWidth + titleWidth + durationWidth + playCountWidth + releaseDateWidth + artistWidth + categoryWidth));
         }
     }
 }
