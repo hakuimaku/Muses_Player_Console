@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Data.SqlClient;
 using LibVLCSharp.Shared;
 using Timer = System.Timers.Timer;
@@ -202,15 +203,11 @@ public class MusesService
             cmd.ExecuteNonQuery();
             conn.Close();
 
-            Console.WriteLine("Registration successful");
-            Console.WriteLine($"User {username} registered successfully");
-            Console.WriteLine("Please login to continue");
-
             return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine("Error during registration: " + ex.Message);
+            System.IO.File.AppendAllText("muses_debug.log", $"[Error] {ex.Message}\n");
             return false;
         }
     }
@@ -461,6 +458,7 @@ public class MusesService
 
     public bool GetAllCategories()
     {
+        Categories.Clear();
         SqlConnection conn = new SqlConnection(ConnectionString);
         try
         {
@@ -522,6 +520,30 @@ public class MusesService
 
         connection.Close();
         return foundSongs;
+    }
+
+    public List<Category> FindCategory(string title)
+    {
+        List<Category> foundCategories = new List<Category>();
+        
+        using SqlConnection connection = new SqlConnection(ConnectionString);
+        string query = "SELECT * FROM dbo.fn_GetCategoryByTitle(@Keyword);";
+        using SqlCommand command = new SqlCommand(query, connection);
+        command.Parameters.AddWithValue("@Keyword", title);
+        
+        connection.Open();
+        using SqlDataReader reader = command.ExecuteReader();
+        
+        while (reader.Read())
+        {
+            string dbCategoryId = reader["CategoryID"].ToString() ?? string.Empty;
+            string dbCategoryName = reader["CategoryName"].ToString() ?? string.Empty;
+            
+            Category foundCategory = new Category(dbCategoryId, dbCategoryName);
+            foundCategories.Add(foundCategory);
+        }
+        connection.Close();
+        return foundCategories;
     }
 
     public bool GetTop10Songs()
@@ -614,7 +636,7 @@ public class MusesService
                 
                 System.IO.File.AppendAllText("muses_debug.log", $"[INFO] Started playing song: {song.Title} at {DateTime.UtcNow}\n");
             
-                while (CurrentSong == song)
+                while (true)
                 {
                     await Task.Delay(1000);
                 
@@ -636,8 +658,13 @@ public class MusesService
                             System.IO.File.AppendAllText("muses_debug.log", $"[INFO] Incremented play count for song: {song.Title} at {DateTime.UtcNow}\n");
                         }
                     }
+
+                    if (CurrentSong.Duration == _playedTime.TotalSeconds)
+                    {
+                        System.IO.File.AppendAllText("muses_debug.log", $"[INFO] Finished PlaySong: {song.Title} at {DateTime.UtcNow}\n");
+                        break;
+                    }
                 }
-                System.IO.File.AppendAllText("muses_debug.log", $"[INFO] Stopped playing song: {song.Title} at {DateTime.UtcNow}\n");
             }
             catch (Exception ex)
             {
@@ -645,6 +672,7 @@ public class MusesService
             }
         });
     }
+    
     public void PauseSong()
     {
         if (_mediaPlayer.Media == null) return;
@@ -969,13 +997,18 @@ public class MusesService
         ConnectionString = _connectionStringUser; // switch back to user connection
     }
 
-    public bool CreateNewSong(string title, string altTitle, int duration, DateTime releaseDate, List<string> artistIDs,
-        List<string> categoryIDs, string audioUrl)
+    public bool CreateNewSong(string title, string altTitle, int duration, DateTime releaseDate, string artistIDs,
+        string categoryIDs, string audioUrl)
     {
         SqlConnection conn = new SqlConnection(ConnectionString);
 
         try
         {
+            if (string.IsNullOrWhiteSpace(releaseDate.ToString(CultureInfo.InvariantCulture)))
+            {
+                releaseDate = DateTime.Now;
+            }
+
             conn.Open();
             using SqlCommand cmd = new SqlCommand("dbo.sp_AddNewSong", conn);
             cmd.CommandType = System.Data.CommandType.StoredProcedure;
@@ -983,28 +1016,29 @@ public class MusesService
             cmd.Parameters.AddWithValue("@AltTitle", altTitle);
             cmd.Parameters.AddWithValue("@Duration", duration);
             cmd.Parameters.AddWithValue("@ReleaseDate", releaseDate);
-            cmd.Parameters.AddWithValue("@ArtistIDs", string.Join(",", artistIDs));
-            cmd.Parameters.AddWithValue("@CategoryIDs", string.Join(",", categoryIDs));
+            cmd.Parameters.AddWithValue("@ArtistIDs", artistIDs);
+            cmd.Parameters.AddWithValue("@CategoryIDs", categoryIDs);
             cmd.Parameters.AddWithValue("@AudioURL", audioUrl);
 
             cmd.ExecuteNonQuery();
             conn.Close();
+            System.IO.File.AppendAllText("muses_debug.log", $"[SUCCESSFUL] Create a new song: {title}\n");
             return true;
         }
         catch (SqlException ex)
         {
             if (ex.Number == 50001 || ex.Number == 50002 || ex.Number == 50003 || ex.Number == 50004)
             {
-                Console.WriteLine(ex.Message);
+                System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] {ex.Message}\n");
             }
             else
             {
-                Console.WriteLine("SQL error while creating song: " + ex.Message);
+                System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] While creating a new song: {ex.Message}\n");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine("Error while creating new song: " + ex.Message);
+            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] While creating a new song: {ex.Message}\n");
         }
         finally
         {

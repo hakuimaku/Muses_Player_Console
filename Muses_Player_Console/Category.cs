@@ -2,8 +2,8 @@ namespace Muses_Player_Console;
 
 public class Category
 {
-    string CategoryName { get; set; }
-    string CategoryID { get; set; }
+    public string CategoryName { get; set; }
+    public string CategoryID { get; set; }
     
     const int CategoryIDWidth = 15;
     const int CategoryNameWidth = 30;
