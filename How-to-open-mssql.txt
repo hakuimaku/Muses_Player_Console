@@ -2,10 +2,9 @@ How-to-open-mssql
 
 Cách để mở mssql localhost server để có database cho app Muses_Player_Console
 
-B1: Giải nén file mssql_shared_backup.tar.gz ở bất kỳ (Đề xuất giải nén ở ổ D)
-(Cấu trúc thư mục đề xuất: D:\mssql_shared\docker-compose.yml)
+B1: Giải nén file mssql_shared_backup.tar.gz ở bất kỳ
 
-B2: Mở terminal cd tới D:\mssql_shared và gõ: docker compose up -d
+B2: Mở terminal cd tới thư mục mssql_shared (chứa file docker-compose.yml) và gõ: docker compose up -d
 
 B3:  Kiểm tra đã mở server chưa: docker ps
 
