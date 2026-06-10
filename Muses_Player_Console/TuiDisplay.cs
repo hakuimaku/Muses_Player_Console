@@ -18,6 +18,7 @@ namespace Muses_Player_Console
         private Window _registerWindow;
         private Window _createPlaylistWindow;
         private Window _createSongWindow;
+        private Window _registerArtistWindow;
         
         private Window _userDashboard;
         private Window _userMenuFrame;
@@ -119,11 +120,13 @@ namespace Muses_Player_Console
             
             InitCreatePlaylistWindow();
             
+            InitRegisterArtistWindow();
+            
             InitArtistWindow();
             
             InitCreateSongWindow();
             
-            this.Add(_loginWindow, _registerWindow, _createPlaylistWindow, _createSongWindow, _guestDashboard, _userDashboard, _artistDashboard);
+            this.Add(_loginWindow, _registerWindow, _createPlaylistWindow, _registerArtistWindow, _createSongWindow, _guestDashboard, _userDashboard, _artistDashboard);
             
             _registerWindow.Visible = false;
             _createPlaylistWindow.Visible = false;
@@ -131,6 +134,7 @@ namespace Muses_Player_Console
             _userDashboard.Visible = false;
             _artistDashboard.Visible = false;
             _createSongWindow.Visible = false;
+            _registerArtistWindow.Visible = false;
             
             WireUpMusicEngineEvents();
         }
@@ -342,7 +346,8 @@ namespace Muses_Player_Console
                 "3. My Playlists",
                 "4. View Artists",
                 "5. View Categories",
-                "6. Switch to Artist"
+                "6. Switch to Artist",
+                "7. Register Artist"
             };
 
             var menuListView = new ListView()
@@ -394,6 +399,17 @@ namespace Muses_Player_Console
                         else
                         {
                             MessageBox.Query(_app, "Error", "You are not a Artist!", "OK");
+                        }
+                        break;
+                    case 7:
+                        if (_musesService.IsArtist())
+                        {
+                            MessageBox.Query(_app, "Error", "You are already an Artist!", "OK");
+                        }
+                        else
+                        {
+                            _registerArtistWindow.Visible = true;
+                            _registerArtistWindow.SetFocus();
                         }
                         break;
                 }
@@ -545,6 +561,56 @@ namespace Muses_Player_Console
             };
             
             _createPlaylistWindow.Add(lblName, txtName, checkFav, btnAccept, btnCancel);
+        }
+
+        private void InitRegisterArtistWindow()
+        {
+            _registerArtistWindow = new Window()
+            {
+                Title = "Register as Artist",
+                X = Pos.Center(), Y = Pos.Center(),
+                Width = 40,
+                Height = 12,
+                BorderStyle = LineStyle.Double,
+            };
+            
+            var lblName = new Label() { Text = "Artist Name:", X = 2, Y = 1 };
+            var txtName = new TextField() { Text = "", X = 2, Y = 2, Width = 33 };
+            
+            var lblBio = new Label() { Text = "Bio:", X = 2, Y = 4 };
+            var txtBio = new TextField() { Text = "", X = 2, Y = 5, Width = 33 };
+
+            var btnAccept = new Button() { Title = "Accept", X = 26, Y = 8 };
+            
+            var btnCancel = new Button() { Title = "Cancel", X = 2, Y = 8 };
+
+            btnAccept.Accepted += (s, e) =>
+            {
+                string aName = txtName.Text.ToString().Trim();
+                string aBio = txtBio.Text.ToString().Trim();
+                
+                if(_musesService.AddNewArtist(aName, aBio, ""))
+                {
+                    txtName.Text = "";
+                    txtBio.Text = "";
+                    MessageBox.Query(_app, "Success", "Register as Artist successfully!", "OK");
+                    _registerArtistWindow.Visible = false;
+                }
+                else
+                {
+                    MessageBox.Query(_app, "Failed", "Register as Artist failed!", "Try again");
+                }
+            };
+
+            btnCancel.Accepted += (s, e) =>
+            {
+                txtName.Text = "";
+                txtBio.Text = "";
+                MessageBox.Query(_app, "Cancel", "Register as Artist canceled!", "OK");
+                _registerArtistWindow.Visible = false;
+            };
+            
+            _registerArtistWindow.Add(lblName, txtName, lblBio, txtBio, btnAccept, btnCancel);
         }
 
         
@@ -1172,7 +1238,6 @@ namespace Muses_Player_Console
         }
 
         
-        // Còn update
         private void RenderArtists(IEnumerable<Artist> artists, Window targetContentFrame)
         {
             targetContentFrame.RemoveAll();
@@ -1193,7 +1258,7 @@ namespace Muses_Player_Console
             MessageBox.Query(_app, "Warning", "This feature is not available yet.", "OK");
         }
 
-        // Xong
+
         private void RenderPlaylists(IEnumerable<Playlist> playlists, Window targetContentFrame)
         {
             targetContentFrame.RemoveAll();
@@ -1301,7 +1366,7 @@ namespace Muses_Player_Console
             targetContentFrame.Add(tableContainer);
         }
     
-        // Xong
+
         private void RenderPlaylistSongs(Playlist playlist, Window targetContentFrame)
         {
             targetContentFrame.RemoveAll();

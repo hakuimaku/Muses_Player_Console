@@ -42,9 +42,6 @@ public class MusesService
     private string _connectionStringArtist =
         "Server=localhost,1433;Database=Muses_DB;User Id=login_artist;Password=ArtistPass@123;TrustServerCertificate=True;Encrypt=False;";
 
-    private string _connectionStringAdmin =
-        "Server=localhost,1433;Database=Muses_DB;User Id=login_admin;Password=AdminPass@123;TrustServerCertificate=True;Encrypt=False;";
-
 
     public string ConnectionString { get; private set; }
     public User User = new User();
@@ -132,33 +129,26 @@ public class MusesService
                     ConnectionString = _connectionStringUser; // switch to user connection
                     IsLoggedIn = true;
 
-                    Console.WriteLine("Login successful");
-                    Console.WriteLine($"User {dbUsername} logged in successfully");
-
-                    if (User.UserID == "USR0000001")
-                    {
-                        IsAdmin = true;
-                        ConnectionString = _connectionStringAdmin; // switch to admin connection
-                    }
+                    System.IO.File.AppendAllText("muses_debug.log", $"[INFO] User {dbUsername} logged in at {DateTime.UtcNow}\n");
 
                     return true;
                 }
                 else
                 {
-                    Console.WriteLine("Invalid password");
+                    System.IO.File.AppendAllText("muses_debug.log", $"[WARNING] Failed login attempt for user {dbUsername} at {DateTime.UtcNow}\n");
                     reader.Close();
                     return false;
                 }
             }
             else
             {
-                Console.WriteLine("User not found");
+                System.IO.File.AppendAllText("muses_debug.log", $"[WARNING] Failed login attempt for username {username} at {DateTime.UtcNow}\n");
                 return false;
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine("Error during login: " + ex.Message);
+            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error during login for username {username} - Exception: {ex.Message}\n{ex.StackTrace}\n");
             return false;
         }
         finally
@@ -183,7 +173,7 @@ public class MusesService
         }
         catch (Exception ex)
         {
-            Console.WriteLine("Error incrementing play count: " + ex.Message);
+            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error IncrementPlayCount for SongID {songId} - Exception: {ex.Message}\n{ex.StackTrace}\n");
         }
     }
 
@@ -244,7 +234,7 @@ public class MusesService
         }
         catch (Exception ex)
         {
-            Console.WriteLine("Error fetching playlists: " + ex.Message);
+            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error fetching playlists for user {User.Username} - Exception: {ex.Message}\n{ex.StackTrace}\n");
             return false;
         }
         finally
@@ -287,7 +277,7 @@ public class MusesService
         }
         catch (Exception e)
         {
-            Console.WriteLine("Error fetching songs: " + e.Message);
+            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error fetching songs - Exception: {e.Message}\n{e.StackTrace}\n");
             return false;
         }
         finally
@@ -325,7 +315,7 @@ public class MusesService
         }
         catch (Exception e)
         {
-            Console.WriteLine("Error fetching artists: " + e.Message);
+            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error fetching artists - Exception: {e.Message}\n{e.StackTrace}\n");
             return false;
         }
         finally
@@ -431,7 +421,7 @@ public class MusesService
         }
         catch (Exception e)
         {
-            Console.WriteLine("Error loading playlist songs: " + e.Message);
+            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error fetching songs for playlist ID {playlistId} - Exception: {e.Message}\n{e.StackTrace}\n");
             return false;
         }
         finally
@@ -481,7 +471,7 @@ public class MusesService
         }
         catch (Exception e)
         {
-            Console.WriteLine("Error fetching categories: " + e.Message);
+            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error fetching categories - Exception: {e.Message}\n{e.StackTrace}\n");
             return false;
         }
         finally
@@ -580,7 +570,7 @@ public class MusesService
         }
         catch (Exception e)
         {
-            Console.WriteLine("Error fetching top songs: " + e.Message);
+            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error fetching top 10 songs - Exception: {e.Message}\n{e.StackTrace}\n");
             return false;
         }
         finally
@@ -738,6 +728,29 @@ public class MusesService
     }
     
 
+    public bool AddNewArtist(string artistName, string artistBio, string avatarUrl)
+    {
+        using SqlConnection conn = new SqlConnection(ConnectionString);
+        try
+        {
+            conn.Open();
+            using SqlCommand cmd = new SqlCommand("dbo.sp_AddNewArtist", conn);
+            cmd.CommandType = System.Data.CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@ArtistName", artistName);
+            cmd.Parameters.AddWithValue("@Bio", artistBio);
+            cmd.Parameters.AddWithValue("@AvatarURL", avatarUrl);
+            cmd.Parameters.AddWithValue("@UserID", User.UserID);
+
+            cmd.ExecuteNonQuery();
+            System.IO.File.AppendAllText("muses_debug.log", $"[INFO] Added new artist: {artistName} at {DateTime.UtcNow}\n");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error AddNewArtist - Exception: {ex.Message}\n{ex.StackTrace}\n");
+            return false;
+        }
+    }
     public bool AddSongToPlaylist(string playlistId, string songId)
     {
         using SqlConnection conn = new SqlConnection(ConnectionString);
@@ -751,13 +764,14 @@ public class MusesService
             cmd.Parameters.AddWithValue("@UserID_WhoAdds", User.UserID);
 
             cmd.ExecuteNonQuery();
+            System.IO.File.AppendAllText("muses_debug.log", $"[INFO] Added song (ID: {songId}) to playlist (ID: {playlistId}) at {DateTime.UtcNow}\n");
             return true;
         }
         catch (SqlException ex)
         {
             if (ex.Number == 50050 || ex.Number == 50051)
             {
-                Console.WriteLine(ex.Message);
+                System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error AddSongToPlaylist - SqlException: {ex.Message}\n{ex.StackTrace}\n");
             }
             else
             {
@@ -787,17 +801,18 @@ public class MusesService
 
             cmd.ExecuteNonQuery();
             conn.Close();
+            System.IO.File.AppendAllText("muses_debug.log", $"[INFO] Created new playlist: {playlistName} at {DateTime.UtcNow}\n");
             return true;
         }
         catch (SqlException ex)
         {
             if (ex.Number == 50030 || ex.Number == 50031)
             {
-                Console.WriteLine(ex.Message);
+                System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error CreateNewPlaylist - SqlException: {ex.Message}\n{ex.StackTrace}\n");
             }
             else
             {
-                Console.WriteLine("SQL error while creating playlist: " + ex.Message);
+                System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error CreateNewPlaylist - Exception: {ex.Message}\n{ex.StackTrace}\n");
             }
         }
 
@@ -856,16 +871,16 @@ public class MusesService
         {
             if (ex.Number == 50070 || ex.Number == 50071 || ex.Number == 50072)
             {
-                Console.WriteLine(ex.Message);
+                System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error SwapSongsInPlaylist - SqlException: {ex.Message}\n{ex.StackTrace}\n");
             }
             else
             {
-                Console.WriteLine("SQL error while swapping songs in playlist: " + ex.Message);
+                System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error SwapSongsInPlaylist - Exception: {ex.Message}\n{ex.StackTrace}\n");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine("Error while swapping songs in playlist: " + ex.Message);
+            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error SwapSongsInPlaylist - Exception: {ex.Message}\n{ex.StackTrace}\n");
         }
 
         conn.Close();
@@ -890,16 +905,16 @@ public class MusesService
         {
             if (ex.Number == 50060)
             {
-                Console.WriteLine(ex.Message);
+                System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error DeletePlaylist - SqlException: {ex.Message}\n{ex.StackTrace}\n");
             }
             else
             {
-                Console.WriteLine("SQL error while deleting playlist: " + ex.Message);
+                System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error DeletePlaylist - Exception: {ex.Message}\n{ex.StackTrace}\n");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine("Error while deleting playlist: " + ex.Message);
+            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error DeletePlaylist - Exception: {ex.Message}\n{ex.StackTrace}\n");
         }
 
         conn.Close();
@@ -931,7 +946,7 @@ public class MusesService
         }
         catch (Exception ex)
         {
-            Console.WriteLine("Error checking artist status: " + ex.Message);
+            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error IsArtist - Exception: {ex.Message}\n{ex.StackTrace}\n");
         }
         finally
         {
@@ -943,7 +958,7 @@ public class MusesService
 
     public bool SwitchToArtistMode()
     {
-        if (IsLoggedIn && IsArtist())
+        if (IsArtist())
         {
             SqlConnection conn = new SqlConnection(ConnectionString);
             try
@@ -967,16 +982,17 @@ public class MusesService
                     ConnectionString = _connectionStringArtist; // switch to artist connection
 
                     Artist = new Artist(dbArtistId, dbArtistName, dbBio, dbAvatarUrl, dbUserId);
+                    System.IO.File.AppendAllText("muses_debug.log", $"[INFO] Switched to Artist Mode for user ID: {User.UserID} at {DateTime.UtcNow}\n");
                     return true;
                 }
                 else
                 {
-                    Console.WriteLine("No artist profile found for current user.");
+                    System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] No artist profile found for user ID: {User.UserID} at {DateTime.UtcNow}\n");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error loading artist profile: " + ex.Message);
+                System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error loading artist profile: {ex.Message}\n{ex.StackTrace}\n");
             }
             finally
             {
@@ -985,7 +1001,7 @@ public class MusesService
         }
         else
         {
-            Console.WriteLine("Current user is not an artist. Cannot switch to Artist Mode.");
+            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] User ID: {User.UserID} is not an artist, cannot switch to Artist Mode at {DateTime.UtcNow}\n");
         }
 
         return false;
@@ -993,7 +1009,7 @@ public class MusesService
 
     public void SwitchToUserMode()
     {
-        Console.WriteLine("Switching back to user mode.");
+        System.IO.File.AppendAllText("muses_debug.log", $"[INFO] Switching back to User Mode for user ID: {User.UserID} at {DateTime.UtcNow}\n");
         ConnectionString = _connectionStringUser; // switch back to user connection
     }
 
@@ -1062,11 +1078,12 @@ public class MusesService
             cmd.Parameters.AddWithValue("@ArtistID_WhoDeletes", artistId);
             cmd.ExecuteNonQuery();
             conn.Close();
+            System.IO.File.AppendAllText("muses_debug.log", $"[INFO] Deleted song (ID: {songId}) by artist ID: {artistId} at {DateTime.UtcNow}\n");
             return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine("Error while deleting song: " + ex.Message);
+            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error while deleting song (ID: {songId}) - Exception: {ex.Message}\n{ex.StackTrace}\n");
             return false;
         }
         finally
@@ -1093,7 +1110,7 @@ public class MusesService
         }
         catch (Exception ex)
         {
-            Console.WriteLine("Error while updating song audio URL: " + ex.Message);
+            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error while updating song audio URL (ID: {songId}) - Exception: {ex.Message}\n{ex.StackTrace}\n");
             return false;
         }
         finally
@@ -1102,72 +1119,4 @@ public class MusesService
         }
     }
     
-
-    // Amin Interaction
-    public void BackupFull()
-    {
-        SqlConnection conn = new SqlConnection(ConnectionString);
-        try
-        {
-            conn.Open();
-            using SqlCommand cmd = new SqlCommand("BACKUP DATABASE Muses_DB" +
-                                                  " TO DISK = '/var/opt/mssql/backup/Muses_DB_Full.bak'" +
-                                                  " WITH INIT, COMPRESSION, CHECKSUM;", conn);
-            cmd.ExecuteNonQuery();
-            
-            Console.WriteLine("Database backup completed successfully.");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("Error during database backup: " + ex.Message);
-        }
-        finally
-        {
-            conn.Close();
-        }
-    }
-
-    public void BackupDiff()
-    {
-        SqlConnection conn = new SqlConnection(ConnectionString);
-        try
-        {
-            conn.Open();
-            using SqlCommand cmd = new SqlCommand("BACKUP DATABASE Muses_DB" +
-                                                  " TO DISK = '/var/opt/mssql/backup/Muses_DB_Diff.bak'" +
-                                                  " WITH DIFFERENTIAL, INIT, COMPRESSION, CHECKSUM;", conn);
-            cmd.ExecuteNonQuery();
-            Console.WriteLine("Database backup completed successfully.");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("Error during database backup: " + ex.Message);
-        }
-        finally
-        {
-            conn.Close();
-        }
-    }
-
-    public void BackupLog()
-    {
-        SqlConnection conn = new SqlConnection(ConnectionString);
-        try
-        {
-            conn.Open();
-            using SqlCommand cmd = new SqlCommand("BACKUP LOG Muses_DB" +
-                                                  " TO DISK = '/var/opt/mssql/backup/Muses_DB_Log.trn'" +
-                                                  " WITH NOINIT, COMPRESSION, CHECKSUM;", conn);
-            cmd.ExecuteNonQuery();
-            Console.WriteLine("Database log backup completed successfully.");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("Error during database log backup: " + ex.Message);
-        }
-        finally
-        {
-            conn.Close();
-        }
-    }
 }
