@@ -1,7 +1,6 @@
 using System.Globalization;
 using Microsoft.Data.SqlClient;
 using LibVLCSharp.Shared;
-using Timer = System.Timers.Timer;
 
 namespace Muses_Player_Console;
 
@@ -20,13 +19,15 @@ public class MusesService
     private LibVLC _libVlc;
     private MediaPlayer _mediaPlayer;
 
-    public event Action<Song> OnSongChanged;
-    public event Action<string> OnTimeUpdated;
-    public event Action<bool> OnPlayStateChanged;
+    public event Action<Song>? OnSongChanged;
+    public event Action<string>? OnTimeUpdated;
+    public event Action<bool>? OnPlayStateChanged;
 
-    private DateTime _startedAt;
+
     private TimeSpan _playedTime;
     private bool _playCountIncremented;
+    
+    private int _currentSessionId;
     
     
 
@@ -124,7 +125,7 @@ public class MusesService
 
                 if (dbPassword == password)
                 {
-                    User.UserID = dbUserId;
+                    User.UserId = dbUserId;
                     User.Username = dbUsername;
                     User.Email = dbEmail;
                     User.Password = dbPassword;
@@ -135,26 +136,26 @@ public class MusesService
                     ConnectionString = _connectionStringUser; // switch to user connection
                     IsLoggedIn = true;
 
-                    System.IO.File.AppendAllText("muses_debug.log", $"[INFO] User {dbUsername} logged in at {DateTime.UtcNow}\n");
+                    File.AppendAllText("muses_debug.log", $"[INFO] User {dbUsername} logged in at {DateTime.UtcNow}\n");
 
                     return true;
                 }
                 else
                 {
-                    System.IO.File.AppendAllText("muses_debug.log", $"[WARNING] Failed login attempt for user {dbUsername} at {DateTime.UtcNow}\n");
+                    File.AppendAllText("muses_debug.log", $"[WARNING] Failed login attempt for user {dbUsername} at {DateTime.UtcNow}\n");
                     reader.Close();
                     return false;
                 }
             }
             else
             {
-                System.IO.File.AppendAllText("muses_debug.log", $"[WARNING] Failed login attempt for username {username} at {DateTime.UtcNow}\n");
+                File.AppendAllText("muses_debug.log", $"[WARNING] Failed login attempt for username {username} at {DateTime.UtcNow}\n");
                 return false;
             }
         }
         catch (Exception ex)
         {
-            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error during login for username {username} - Exception: {ex.Message}\n{ex.StackTrace}\n");
+            File.AppendAllText("muses_debug.log", $"[ERROR] Error during login for username {username} - Exception: {ex.Message}\n{ex.StackTrace}\n");
             return false;
         }
         finally
@@ -163,7 +164,7 @@ public class MusesService
         }
     }
 
-    public void IncrementPlayCount(string songId)
+    public void IncrementPlayCount(string? songId)
     {
         SqlConnection conn = new SqlConnection(ConnectionString);
 
@@ -179,7 +180,7 @@ public class MusesService
         }
         catch (Exception ex)
         {
-            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error IncrementPlayCount for SongID {songId} - Exception: {ex.Message}\n{ex.StackTrace}\n");
+            File.AppendAllText("muses_debug.log", $"[ERROR] Error IncrementPlayCount for SongID {songId} - Exception: {ex.Message}\n{ex.StackTrace}\n");
         }
     }
 
@@ -203,7 +204,7 @@ public class MusesService
         }
         catch (Exception ex)
         {
-            System.IO.File.AppendAllText("muses_debug.log", $"[Error] {ex.Message}\n");
+            File.AppendAllText("muses_debug.log", $"[Error] {ex.Message}\n");
             return false;
         }
     }
@@ -220,7 +221,7 @@ public class MusesService
             string query =
                 "SELECT * FROM Playlists WHERE UserID = @UserID";
             SqlCommand cmd = new SqlCommand(query, conn);
-            cmd.Parameters.AddWithValue("@UserID", User.UserID);
+            cmd.Parameters.AddWithValue("@UserID", User.UserId);
 
             SqlDataReader reader = cmd.ExecuteReader();
 
@@ -230,9 +231,8 @@ public class MusesService
                 string dbPlaylistName = reader["PlaylistName"].ToString() ?? string.Empty;
                 DateTime dbCreatedDate = (DateTime)reader["CreatedDate"];
                 bool dbIsFavorite = (bool)reader["IsFavorite"];
-                string dbUserId = reader["UserID"].ToString() ?? string.Empty;
 
-                Playlist playlist = new Playlist(dbPlaylistId, dbPlaylistName, dbCreatedDate, dbIsFavorite, dbUserId);
+                Playlist playlist = new Playlist(dbPlaylistId, dbPlaylistName, dbCreatedDate, dbIsFavorite);
                 Playlists.Add(playlist);
             }
 
@@ -240,7 +240,7 @@ public class MusesService
         }
         catch (Exception ex)
         {
-            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error fetching playlists for user {User.Username} - Exception: {ex.Message}\n{ex.StackTrace}\n");
+            File.AppendAllText("muses_debug.log", $"[ERROR] Error fetching playlists for user {User.Username} - Exception: {ex.Message}\n{ex.StackTrace}\n");
             return false;
         }
         finally
@@ -283,7 +283,7 @@ public class MusesService
         }
         catch (Exception e)
         {
-            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error fetching songs - Exception: {e.Message}\n{e.StackTrace}\n");
+            File.AppendAllText("muses_debug.log", $"[ERROR] Error fetching songs - Exception: {e.Message}\n{e.StackTrace}\n");
             return false;
         }
         finally
@@ -313,7 +313,7 @@ public class MusesService
                 string dbAvatarUrl = reader["AvatarURL"].ToString() ?? string.Empty;
                 string dbUserId = reader["UserID"].ToString() ?? string.Empty;
 
-                Artist a = new Artist(dbArtistId, dbArtistName, dbBio, dbAvatarUrl, dbUserId);
+                Artist a = new Artist(dbArtistId, dbArtistName, dbBio, dbAvatarUrl, dbUserId, null);
                 Artists.Add(a);
             }
 
@@ -321,7 +321,7 @@ public class MusesService
         }
         catch (Exception e)
         {
-            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error fetching artists - Exception: {e.Message}\n{e.StackTrace}\n");
+            File.AppendAllText("muses_debug.log", $"[ERROR] Error fetching artists - Exception: {e.Message}\n{e.StackTrace}\n");
             return false;
         }
         finally
@@ -427,7 +427,7 @@ public class MusesService
         }
         catch (Exception e)
         {
-            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error fetching songs for playlist ID {playlistId} - Exception: {e.Message}\n{e.StackTrace}\n");
+            File.AppendAllText("muses_debug.log", $"[ERROR] Error fetching songs for playlist ID {playlistId} - Exception: {e.Message}\n{e.StackTrace}\n");
             return false;
         }
         finally
@@ -477,7 +477,7 @@ public class MusesService
         }
         catch (Exception e)
         {
-            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error fetching categories - Exception: {e.Message}\n{e.StackTrace}\n");
+            File.AppendAllText("muses_debug.log", $"[ERROR] Error fetching categories - Exception: {e.Message}\n{e.StackTrace}\n");
             return false;
         }
         finally
@@ -576,7 +576,7 @@ public class MusesService
         }
         catch (Exception e)
         {
-            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error fetching top 10 songs - Exception: {e.Message}\n{e.StackTrace}\n");
+            File.AppendAllText("muses_debug.log", $"[ERROR] Error fetching top 10 songs - Exception: {e.Message}\n{e.StackTrace}\n");
             return false;
         }
         finally
@@ -587,10 +587,8 @@ public class MusesService
 
     public void LoadPlaylistToPlayQueue()
     {
-        if (CurrentPlaylist == null) return;
-        
         ClearQueue();
-        PlayQueue = GetSongsInPlaylist(CurrentPlaylist.PlaylistID) ? PlayQueue : new List<Song>();
+        PlayQueue = CurrentPlaylist.PlaylistId != null && GetSongsInPlaylist(CurrentPlaylist.PlaylistId) ? PlayQueue : new List<Song>();
         CurrentSongIndex = 0;
         CurrentSong = PlayQueue.Count > 0 ? PlayQueue[CurrentSongIndex] : new Song();
     }
@@ -601,13 +599,12 @@ public class MusesService
     // User Interaction
     public void PlaySong()
     {
-        if (CurrentSong == null)
-        {
-            CurrentSong =  PlayQueue.Count > 0 ? PlayQueue[CurrentSongIndex] : new Song();
-        }
         Song song = CurrentSong;
-        if (song == null || string.IsNullOrWhiteSpace(song.AudioURL)) return;
+        if (string.IsNullOrWhiteSpace(song.AudioUrl)) return;
         
+        _currentSessionId++;
+        int mySessionId = _currentSessionId;
+
         Task.Run(async () => {
             try
             {
@@ -618,24 +615,29 @@ public class MusesService
                     _mediaPlayer.Media = null;
                 }
             
-                var media = new Media(_libVlc, song.AudioURL, FromType.FromLocation);
+                var media = new Media(_libVlc, song.AudioUrl, FromType.FromLocation);
                 _mediaPlayer.Media = media;
                 _mediaPlayer.Play();
             
                 IsPlaying = true;
                 _playedTime = TimeSpan.Zero;
                 _playCountIncremented = false;
-                _startedAt = DateTime.UtcNow;
+
             
                 OnSongChanged?.Invoke(song);
                 OnPlayStateChanged?.Invoke(true);
                 
-                System.IO.File.AppendAllText("muses_debug.log", $"[INFO] Started playing song: {song.Title} at {DateTime.UtcNow}\n");
-            
-                while (true)
+                File.AppendAllText("muses_debug.log", $"[INFO] Started Session {mySessionId} for song: {song.Title}\n");
+                
+                while (mySessionId == _currentSessionId && _mediaPlayer.Media != null)
                 {
                     await Task.Delay(1000);
-                
+                    
+                    if (mySessionId != _currentSessionId || _mediaPlayer.Media == null) 
+                    {
+                        break; 
+                    }
+
                     if (IsPlaying)
                     {
                         _playedTime = _playedTime.Add(TimeSpan.FromSeconds(1));
@@ -649,26 +651,27 @@ public class MusesService
                     
                         if (!_playCountIncremented && _playedTime.TotalSeconds >= 30)
                         {
-                            IncrementPlayCount(song.SongID);
+                            IncrementPlayCount(song.SongId);
                             _playCountIncremented = true;
-                            System.IO.File.AppendAllText("muses_debug.log", $"[INFO] Incremented play count for song: {song.Title} at {DateTime.UtcNow}\n");
                         }
                     }
 
-                    if (CurrentSong.Duration == _playedTime.TotalSeconds)
+                    if (song.Duration > 0 && _playedTime.TotalSeconds >= song.Duration)
                     {
-                        System.IO.File.AppendAllText("muses_debug.log", $"[INFO] Finished PlaySong: {song.Title} at {DateTime.UtcNow}\n");
+                        File.AppendAllText("muses_debug.log", $"[INFO] Finished Session {mySessionId}\n");
+                            
+                        StopSong();
                         break;
                     }
                 }
             }
             catch (Exception ex)
             {
-                System.IO.File.AppendAllText("muses_debug.log", $"[CRASH LOG] Error PlaySong - Task.Run: {ex.Message}\n{ex.StackTrace}\n");
+                File.AppendAllText("muses_debug.log", $"[CRASH LOG] Session {mySessionId} Error: {ex.Message}\n");
             }
         });
     }
-    
+        
     public void PauseSong()
     {
         if (_mediaPlayer.Media == null) return;
@@ -678,14 +681,14 @@ public class MusesService
             _mediaPlayer.SetPause(true);
             IsPlaying = false;
             OnPlayStateChanged?.Invoke(false);
-            System.IO.File.AppendAllText("muses_debug.log", $"[INFO] Paused song: {CurrentSong.Title} at {DateTime.UtcNow}\n");
+            File.AppendAllText("muses_debug.log", $"[INFO] Paused song: {CurrentSong.Title} at {DateTime.UtcNow}\n");
         }
         else
         {
             _mediaPlayer.SetPause(false);
             IsPlaying = true;
             OnPlayStateChanged?.Invoke(true);
-            System.IO.File.AppendAllText("muses_debug.log", $"[INFO] Resumed song: {CurrentSong.Title} at {DateTime.UtcNow}\n");
+            File.AppendAllText("muses_debug.log", $"[INFO] Resumed song: {CurrentSong.Title} at {DateTime.UtcNow}\n");
         }
     }
     public void StopSong()
@@ -704,7 +707,7 @@ public class MusesService
         
         OnPlayStateChanged?.Invoke(false);
         OnTimeUpdated?.Invoke("00:00 / 00:00");
-        System.IO.File.AppendAllText("muses_debug.log", $"[INFO] Stopped song: {CurrentSong.Title} at {DateTime.UtcNow}\n");
+        File.AppendAllText("muses_debug.log", $"[INFO] Stopped song: {CurrentSong.Title} at {DateTime.UtcNow}\n");
     }
     public void NextSong()
     {
@@ -745,15 +748,15 @@ public class MusesService
             cmd.Parameters.AddWithValue("@ArtistName", artistName);
             cmd.Parameters.AddWithValue("@Bio", artistBio);
             cmd.Parameters.AddWithValue("@AvatarURL", avatarUrl);
-            cmd.Parameters.AddWithValue("@UserID", User.UserID);
+            cmd.Parameters.AddWithValue("@UserID", User.UserId);
 
             cmd.ExecuteNonQuery();
-            System.IO.File.AppendAllText("muses_debug.log", $"[INFO] Added new artist: {artistName} at {DateTime.UtcNow}\n");
+            File.AppendAllText("muses_debug.log", $"[INFO] Added new artist: {artistName} at {DateTime.UtcNow}\n");
             return true;
         }
         catch (Exception ex)
         {
-            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error AddNewArtist - Exception: {ex.Message}\n{ex.StackTrace}\n");
+            File.AppendAllText("muses_debug.log", $"[ERROR] Error AddNewArtist - Exception: {ex.Message}\n{ex.StackTrace}\n");
             return false;
         }
     }
@@ -767,28 +770,28 @@ public class MusesService
             cmd.CommandType = System.Data.CommandType.StoredProcedure;
             cmd.Parameters.AddWithValue("@PlaylistID", playlistId);
             cmd.Parameters.AddWithValue("@SongID", songId);
-            cmd.Parameters.AddWithValue("@UserID_WhoAdds", User.UserID);
+            cmd.Parameters.AddWithValue("@UserID_WhoAdds", User.UserId);
 
             cmd.ExecuteNonQuery();
-            System.IO.File.AppendAllText("muses_debug.log", $"[INFO] Added song (ID: {songId}) to playlist (ID: {playlistId}) at {DateTime.UtcNow}\n");
+            File.AppendAllText("muses_debug.log", $"[INFO] Added song (ID: {songId}) to playlist (ID: {playlistId}) at {DateTime.UtcNow}\n");
             return true;
         }
         catch (SqlException ex)
         {
             if (ex.Number == 50050 || ex.Number == 50051)
             {
-                System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error AddSongToPlaylist - SqlException: {ex.Message}\n{ex.StackTrace}\n");
+                File.AppendAllText("muses_debug.log", $"[ERROR] Error AddSongToPlaylist - SqlException: {ex.Message}\n{ex.StackTrace}\n");
             }
             else
             {
-                System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error AddSongToPlaylist - SqlException: {ex.Message}\n{ex.StackTrace}\n");
+                File.AppendAllText("muses_debug.log", $"[ERROR] Error AddSongToPlaylist - SqlException: {ex.Message}\n{ex.StackTrace}\n");
             }
 
             return false;
         }
         catch (Exception ex)
         {
-            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error AddSongToPlaylist - Exception: {ex.Message}\n{ex.StackTrace}\n");
+            File.AppendAllText("muses_debug.log", $"[ERROR] Error AddSongToPlaylist - Exception: {ex.Message}\n{ex.StackTrace}\n");
             return false;
         }
     }
@@ -807,18 +810,18 @@ public class MusesService
 
             cmd.ExecuteNonQuery();
             conn.Close();
-            System.IO.File.AppendAllText("muses_debug.log", $"[INFO] Created new playlist: {playlistName} at {DateTime.UtcNow}\n");
+            File.AppendAllText("muses_debug.log", $"[INFO] Created new playlist: {playlistName} at {DateTime.UtcNow}\n");
             return true;
         }
         catch (SqlException ex)
         {
             if (ex.Number == 50030 || ex.Number == 50031)
             {
-                System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error CreateNewPlaylist - SqlException: {ex.Message}\n{ex.StackTrace}\n");
+                File.AppendAllText("muses_debug.log", $"[ERROR] Error CreateNewPlaylist - SqlException: {ex.Message}\n{ex.StackTrace}\n");
             }
             else
             {
-                System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error CreateNewPlaylist - Exception: {ex.Message}\n{ex.StackTrace}\n");
+                File.AppendAllText("muses_debug.log", $"[ERROR] Error CreateNewPlaylist - Exception: {ex.Message}\n{ex.StackTrace}\n");
             }
         }
 
@@ -845,11 +848,11 @@ public class MusesService
         {
             if (ex.Number == 50070 || ex.Number == 50071)
             {
-                System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error RemoveSongFromPlaylist - SqlException: {ex.Message}\n{ex.StackTrace}\n");
+                File.AppendAllText("muses_debug.log", $"[ERROR] Error RemoveSongFromPlaylist - SqlException: {ex.Message}\n{ex.StackTrace}\n");
             }
             else
             {
-                System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error RemoveSongFromPlaylist - Exception: {ex.Message}\n{ex.StackTrace}\n");
+                File.AppendAllText("muses_debug.log", $"[ERROR] Error RemoveSongFromPlaylist - Exception: {ex.Message}\n{ex.StackTrace}\n");
             }
         }
 
@@ -877,16 +880,16 @@ public class MusesService
         {
             if (ex.Number == 50070 || ex.Number == 50071 || ex.Number == 50072)
             {
-                System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error SwapSongsInPlaylist - SqlException: {ex.Message}\n{ex.StackTrace}\n");
+                File.AppendAllText("muses_debug.log", $"[ERROR] Error SwapSongsInPlaylist - SqlException: {ex.Message}\n{ex.StackTrace}\n");
             }
             else
             {
-                System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error SwapSongsInPlaylist - Exception: {ex.Message}\n{ex.StackTrace}\n");
+                File.AppendAllText("muses_debug.log", $"[ERROR] Error SwapSongsInPlaylist - Exception: {ex.Message}\n{ex.StackTrace}\n");
             }
         }
         catch (Exception ex)
         {
-            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error SwapSongsInPlaylist - Exception: {ex.Message}\n{ex.StackTrace}\n");
+            File.AppendAllText("muses_debug.log", $"[ERROR] Error SwapSongsInPlaylist - Exception: {ex.Message}\n{ex.StackTrace}\n");
         }
 
         conn.Close();
@@ -911,16 +914,16 @@ public class MusesService
         {
             if (ex.Number == 50060)
             {
-                System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error DeletePlaylist - SqlException: {ex.Message}\n{ex.StackTrace}\n");
+                File.AppendAllText("muses_debug.log", $"[ERROR] Error DeletePlaylist - SqlException: {ex.Message}\n{ex.StackTrace}\n");
             }
             else
             {
-                System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error DeletePlaylist - Exception: {ex.Message}\n{ex.StackTrace}\n");
+                File.AppendAllText("muses_debug.log", $"[ERROR] Error DeletePlaylist - Exception: {ex.Message}\n{ex.StackTrace}\n");
             }
         }
         catch (Exception ex)
         {
-            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error DeletePlaylist - Exception: {ex.Message}\n{ex.StackTrace}\n");
+            File.AppendAllText("muses_debug.log", $"[ERROR] Error DeletePlaylist - Exception: {ex.Message}\n{ex.StackTrace}\n");
         }
 
         conn.Close();
@@ -940,7 +943,7 @@ public class MusesService
         {
             conn.Open();
             using SqlCommand cmd = new SqlCommand("SELECT @IsArtist = dbo.fn_IsUserAnArtist(@UserID);", conn);
-            cmd.Parameters.AddWithValue("@UserID", User.UserID);
+            cmd.Parameters.AddWithValue("@UserID", User.UserId);
             SqlParameter isArtistParam = new SqlParameter("@IsArtist", System.Data.SqlDbType.Bit)
             {
                 Direction = System.Data.ParameterDirection.Output
@@ -949,11 +952,11 @@ public class MusesService
             cmd.ExecuteNonQuery();
 
             isArtist = (bool)isArtistParam.Value;
-            System.IO.File.AppendAllText("muses_debug.log", $"[INFO] Checked IsArtist for user ID: {User.UserID} - Result: {isArtist} at {DateTime.UtcNow}\n");
+            File.AppendAllText("muses_debug.log", $"[INFO] Checked IsArtist for user ID: {User.UserId} - Result: {isArtist} at {DateTime.UtcNow}\n");
         }
         catch (Exception ex)
         {
-            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error IsArtist - Exception: {ex.Message}\n{ex.StackTrace}\n");
+            File.AppendAllText("muses_debug.log", $"[ERROR] Error IsArtist - Exception: {ex.Message}\n{ex.StackTrace}\n");
         }
         finally
         {
@@ -973,7 +976,7 @@ public class MusesService
                 conn.Open();
                 string query = "SELECT * FROM Artists WHERE UserID = @UserID";
                 using SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@UserID", User.UserID);
+                cmd.Parameters.AddWithValue("@UserID", User.UserId);
                 SqlDataReader reader = cmd.ExecuteReader();
                 if (reader.Read())
                 {
@@ -988,18 +991,18 @@ public class MusesService
 
                     ConnectionString = _connectionStringArtist; // switch to artist connection
 
-                    Artist = new Artist(dbArtistId, dbArtistName, dbBio, dbAvatarUrl, dbUserId);
-                    System.IO.File.AppendAllText("muses_debug.log", $"[INFO] Switched to Artist Mode for user ID: {User.UserID} at {DateTime.UtcNow}\n");
+                    Artist = new Artist(dbArtistId, dbArtistName, dbBio, dbAvatarUrl, dbUserId, null);
+                    File.AppendAllText("muses_debug.log", $"[INFO] Switched to Artist Mode for user ID: {User.UserId} at {DateTime.UtcNow}\n");
                     return true;
                 }
                 else
                 {
-                    System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] No artist profile found for user ID: {User.UserID} at {DateTime.UtcNow}\n");
+                    File.AppendAllText("muses_debug.log", $"[ERROR] No artist profile found for user ID: {User.UserId} at {DateTime.UtcNow}\n");
                 }
             }
             catch (Exception ex)
             {
-                System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error loading artist profile: {ex.Message}\n{ex.StackTrace}\n");
+                File.AppendAllText("muses_debug.log", $"[ERROR] Error loading artist profile: {ex.Message}\n{ex.StackTrace}\n");
             }
             finally
             {
@@ -1008,7 +1011,7 @@ public class MusesService
         }
         else
         {
-            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] User ID: {User.UserID} is not an artist, cannot switch to Artist Mode at {DateTime.UtcNow}\n");
+            File.AppendAllText("muses_debug.log", $"[ERROR] User ID: {User.UserId} is not an artist, cannot switch to Artist Mode at {DateTime.UtcNow}\n");
         }
 
         return false;
@@ -1016,7 +1019,7 @@ public class MusesService
 
     public void SwitchToUserMode()
     {
-        System.IO.File.AppendAllText("muses_debug.log", $"[INFO] Switching back to User Mode for user ID: {User.UserID} at {DateTime.UtcNow}\n");
+        File.AppendAllText("muses_debug.log", $"[INFO] Switching back to User Mode for user ID: {User.UserId} at {DateTime.UtcNow}\n");
         ConnectionString = _connectionStringUser; // switch back to user connection
     }
 
@@ -1045,23 +1048,23 @@ public class MusesService
 
             cmd.ExecuteNonQuery();
             conn.Close();
-            System.IO.File.AppendAllText("muses_debug.log", $"[SUCCESSFUL] Create a new song: {title}\n");
+            File.AppendAllText("muses_debug.log", $"[SUCCESSFUL] Create a new song: {title}\n");
             return true;
         }
         catch (SqlException ex)
         {
             if (ex.Number == 50001 || ex.Number == 50002 || ex.Number == 50003 || ex.Number == 50004)
             {
-                System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] {ex.Message}\n");
+                File.AppendAllText("muses_debug.log", $"[ERROR] {ex.Message}\n");
             }
             else
             {
-                System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] While creating a new song: {ex.Message}\n");
+                File.AppendAllText("muses_debug.log", $"[ERROR] While creating a new song: {ex.Message}\n");
             }
         }
         catch (Exception ex)
         {
-            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] While creating a new song: {ex.Message}\n");
+            File.AppendAllText("muses_debug.log", $"[ERROR] While creating a new song: {ex.Message}\n");
         }
         finally
         {
@@ -1085,12 +1088,12 @@ public class MusesService
             cmd.Parameters.AddWithValue("@ArtistID_WhoDeletes", artistId);
             cmd.ExecuteNonQuery();
             conn.Close();
-            System.IO.File.AppendAllText("muses_debug.log", $"[INFO] Deleted song (ID: {songId}) by artist ID: {artistId} at {DateTime.UtcNow}\n");
+            File.AppendAllText("muses_debug.log", $"[INFO] Deleted song (ID: {songId}) by artist ID: {artistId} at {DateTime.UtcNow}\n");
             return true;
         }
         catch (Exception ex)
         {
-            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error while deleting song (ID: {songId}) - Exception: {ex.Message}\n{ex.StackTrace}\n");
+            File.AppendAllText("muses_debug.log", $"[ERROR] Error while deleting song (ID: {songId}) - Exception: {ex.Message}\n{ex.StackTrace}\n");
             return false;
         }
         finally
@@ -1117,7 +1120,7 @@ public class MusesService
         }
         catch (Exception ex)
         {
-            System.IO.File.AppendAllText("muses_debug.log", $"[ERROR] Error while updating song audio URL (ID: {songId}) - Exception: {ex.Message}\n{ex.StackTrace}\n");
+            File.AppendAllText("muses_debug.log", $"[ERROR] Error while updating song audio URL (ID: {songId}) - Exception: {ex.Message}\n{ex.StackTrace}\n");
             return false;
         }
         finally

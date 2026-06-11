@@ -1,33 +1,27 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Muses_Player_Console
 {
     public class Artist
     {
-        public string ArtistID { get; set; }
-        public string ArtistName { get; set; }
-        public string Bio { get; set; }
-        public string AvatarURL { get; set; }
-        public string UserID { get; set; }
-        public List<Song> MySongs { get; set; }
+        public string? ArtistId { get; set; }
+        public string? ArtistName { get; set; }
+        public string? Bio { get; set; }
+        public string? AvatarUrl { get; set; }
+        public string? UserId { get; set; }
+        public List<Song>? MySongs { get; set; }
         
-        const int artistIdWidth = 15;
-        const int artistNameWidth = 30;
-        const int bioWidth = 40;
         
         public Artist()
         {
             // Default constructor
         }
-        public Artist(string artistID, string artistName, string bio, string avatarURL, string userID, List<Song> mySongs = null)
+        public Artist(string artistId, string artistName, string bio, string avatarUrl, string userId, List<Song>? mySongs)
         {
-            ArtistID = artistID;
+            ArtistId = artistId;
             ArtistName = artistName;
             Bio = bio;
-            AvatarURL = avatarURL;
-            UserID = userID;
+            AvatarUrl = avatarUrl;
+            UserId = userId;
             MySongs = mySongs;
         }
     }

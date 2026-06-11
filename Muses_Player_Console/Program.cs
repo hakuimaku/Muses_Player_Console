@@ -1,6 +1,4 @@
-﻿using Terminal.Gui.ViewBase;
-using Terminal.Gui.App;
-using Terminal.Gui.Drawing;
+﻿using Terminal.Gui.App;
 
 namespace Muses_Player_Console;
 

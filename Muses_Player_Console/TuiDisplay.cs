@@ -5,7 +5,6 @@ using Terminal.Gui.Drawing;
 using Terminal.Gui.App;
 using Terminal.Gui.Input;
 using System.Collections.ObjectModel;
-using System.Runtime.InteropServices.JavaScript;
 
 namespace Muses_Player_Console
 {
@@ -14,31 +13,31 @@ namespace Muses_Player_Console
         private readonly MusesService _musesService;
         private readonly IApplication _app; 
         
-        private Window _loginWindow;
-        private Window _registerWindow;
-        private Window _createPlaylistWindow;
-        private Window _createSongWindow;
-        private Window _registerArtistWindow;
+        private Window? _loginWindow;
+        private Window? _registerWindow;
+        private Window? _createPlaylistWindow;
+        private Window? _createSongWindow;
+        private Window? _registerArtistWindow;
         
-        private Window _userDashboard;
+        private Window? _userDashboard;
         private Window _userMenuFrame;
         private Window _userMainContentFrame;
         private Window _userFooterFrame;
         
-        private Window _artistDashboard;
+        private Window? _artistDashboard;
         private Window _artistMenuFrame;
         private Window _artistMainContentFrame;
         
-        private Window _guestDashboard;
+        private Window? _guestDashboard;
         private Window _guestMainContentFrame;
         private Window _guestMenuFrame;
         
         // User Footer Frame (Control Panel)
-        public Label LblNowPlaying;
-        public Button BtnPlayPause;
-        public Button BtnPrev;
-        public Button BtnNext;
-        public Label LblTime;
+        public Label? LblNowPlaying;
+        public Button? BtnPlayPause;
+        public Button? BtnPrev;
+        public Button? BtnNext;
+        public Label? LblTime;
 
         public TuiDisplay(IApplication app, MusesService musesService)
         {
@@ -125,16 +124,19 @@ namespace Muses_Player_Console
             InitArtistWindow();
             
             InitCreateSongWindow();
-            
-            this.Add(_loginWindow, _registerWindow, _createPlaylistWindow, _registerArtistWindow, _createSongWindow, _guestDashboard, _userDashboard, _artistDashboard);
-            
-            _registerWindow.Visible = false;
-            _createPlaylistWindow.Visible = false;
-            _guestDashboard.Visible = false;
-            _userDashboard.Visible = false;
-            _artistDashboard.Visible = false;
-            _createSongWindow.Visible = false;
-            _registerArtistWindow.Visible = false;
+
+            if (_loginWindow != null && _registerWindow != null && _guestDashboard != null && _userDashboard != null && _artistDashboard != null
+                && _createPlaylistWindow != null && _registerArtistWindow != null && _createSongWindow != null)
+                this.Add(_loginWindow, _registerWindow, _createPlaylistWindow, _registerArtistWindow, _createSongWindow,
+                    _guestDashboard, _userDashboard, _artistDashboard);
+
+            _registerWindow?.Visible = false;
+            _createPlaylistWindow?.Visible = false;
+            _guestDashboard?.Visible = false;
+            _userDashboard?.Visible = false;
+            _artistDashboard?.Visible = false;
+            _createSongWindow?.Visible = false;
+            _registerArtistWindow?.Visible = false;
             
             WireUpMusicEngineEvents();
         }
@@ -191,14 +193,14 @@ namespace Muses_Player_Console
                        """
             };
             
-            txtUser.KeyDown += (s, e) => {
+            txtUser.KeyDown += (_, e) => {
                 if (e.KeyCode == Key.Enter) {
                     txtPass.SetFocus();
                     e.Handled = true;
                 }
             };
             
-            txtPass.KeyDown += (s, e) => {
+            txtPass.KeyDown += (_, e) => {
                 if (e.KeyCode == Key.Enter) {
                     btnLogin.SetFocus();
                     e.Handled = true;
@@ -206,9 +208,9 @@ namespace Muses_Player_Console
             };
             
             // Event handler for Login button (login)
-            btnLogin.Accepted += (s, e) => {
-                string uName = txtUser.Text.ToString().Trim();
-                string pWord = txtPass.Text.ToString().Trim();
+            btnLogin.Accepted += (_, _) => {
+                string uName = txtUser.Text.Trim();
+                string pWord = txtPass.Text.Trim();
 
                 if (string.IsNullOrEmpty(uName) || string.IsNullOrEmpty(pWord)) {
                     MessageBox.Query(_app, "Error", "Username and password cannot be empty!", "OK");
@@ -222,8 +224,8 @@ namespace Muses_Player_Console
                     txtUser.SetFocus(); 
 
                     _loginWindow.Visible = false;
-                    _registerWindow.Visible = false;
-                    _userDashboard.Visible = true;
+                    _registerWindow?.Visible = false;
+                    _userDashboard?.Visible = true;
                     _userMenuFrame.SetFocus();
                 } else {
                     MessageBox.Query(_app, "Failed", "Invalid username or password!", "Try again");
@@ -231,17 +233,17 @@ namespace Muses_Player_Console
             };
             
             // Event handler for Register button (register)
-            btnRegister.Accepted += (s, e) =>
+            btnRegister.Accepted += (_, _) =>
             {
-                _registerWindow.Visible = true;
+                _registerWindow?.Visible = true;
                 _loginWindow.Visible = false;
-                _registerWindow.SetFocus();
+                _registerWindow?.SetFocus();
             };
             
             // Event handler for Guest button (guest)
-            btnGuest.Accepted += (s, e) => {
+            btnGuest.Accepted += (_, e) => {
                 _loginWindow.Visible = false;
-                _guestDashboard.Visible = true;
+                _guestDashboard?.Visible = true;
                 _guestMainContentFrame.SetFocus();
                 e.Handled = true;
             };
@@ -277,7 +279,9 @@ namespace Muses_Player_Console
             var lblConfirmPass = new Label() { Text = "Confirm Password:", X = 2, Y = 9 };
             var txtConfirmPass = new TextField() { Text = "", X = 20, Y = 9, Width = 20, Secret = true };
 
-            var btnRegister = new Button () { Title = "Register", X = Pos.Center(), Y = 12 };
+            var btnRegister = new Button () { Title = "Register", X = Pos.Center() + 10, Y = 12 };
+            
+            var btnCancel = new Button() { Title = "Cancel", X = Pos.Center() - 10, Y = 12 };
             
             var registerFrame = new Window()
             {
@@ -289,17 +293,17 @@ namespace Muses_Player_Console
             };
             
             
-            btnRegister.Accepted += (s, e) => {
-                string uName = txtUser.Text.ToString().Trim();
-                string eMail = txtEmail.Text.ToString().Trim();
-                string pWord = txtPass.Text.ToString().Trim();
+            btnRegister.Accepted += (_, _) => {
+                string uName = txtUser.Text.Trim();
+                string eMail = txtEmail.Text.Trim();
+                string pWord = txtPass.Text.Trim();
 
                 if (string.IsNullOrEmpty(uName) || string.IsNullOrEmpty(pWord) || string.IsNullOrEmpty(eMail)) {
                     MessageBox.Query(_app, "Error", "Username, email, password cannot be empty!", "OK");
                     return;
                 }
 
-                if (pWord != txtConfirmPass.Text.ToString().Trim())
+                if (pWord != txtConfirmPass.Text.Trim())
                 {
                     MessageBox.Query(_app, "Error", "Password and confirm password do not match!", "OK");
                     return;
@@ -314,15 +318,26 @@ namespace Muses_Player_Console
                     txtUser.SetFocus(); 
 
                     MessageBox.Query(_app, "Success", "Register successfully!, Please login to continue", "OK");
-                    _registerWindow.Visible = false;
-                    _loginWindow.Visible = true;
-                    _loginWindow.SetFocus();
+                    _registerWindow?.Visible = false;
+                    _loginWindow?.Visible = true;
+                    _loginWindow?.SetFocus();
                 } else {
                     MessageBox.Query(_app, "Failed", "Invalid username, email or password!", "Try again");
                 }
             };
+
+            btnCancel.Accepted += (_, _) =>
+            {
+                txtUser.Text = "";
+                txtEmail.Text = "";
+                txtPass.Text = "";
+                txtConfirmPass.Text = "";
+                _loginWindow?.Visible = true;
+                _registerWindow?.Visible = false;
+                _loginWindow?.SetFocus();
+            };
             
-            registerFrame.Add(lblRegister, lblUser, txtUser, lblEmail, txtEmail, lblPass, txtPass, lblConfirmPass, txtConfirmPass, btnRegister);
+            registerFrame.Add(lblRegister, lblUser, txtUser, lblEmail, txtEmail, lblPass, txtPass, lblConfirmPass, txtConfirmPass, btnRegister, btnCancel);
             _registerWindow.Add(registerFrame);
         }
         
@@ -357,7 +372,7 @@ namespace Muses_Player_Console
             };
             menuListView.SetSource(menuItems);
 
-            menuListView.Accepted += (s, e) =>
+            menuListView.Accepted += (_, _) =>
             {
                 int idx = menuListView.SelectedItem ?? -1;
                 switch (idx)
@@ -365,10 +380,11 @@ namespace Muses_Player_Console
                     case 0:
                         _musesService.ClearData();
                         _musesService.StopSong();
-                        _loginWindow.Visible = true;
-                        _userDashboard.Visible = false;
+                        _loginWindow?.Visible = true;
+                        _userDashboard?.Visible = false;
                         _userMainContentFrame.RemoveAll();
-                        _loginWindow.SetFocus();
+                        _artistMainContentFrame.RemoveAll();
+                        _loginWindow?.SetFocus();
                         break;
                     case 1:
                         _musesService.GetAllSongs();
@@ -392,7 +408,7 @@ namespace Muses_Player_Console
                     case 6:
                         if (_musesService.SwitchToArtistMode())
                         {
-                            _artistDashboard.Visible = true;
+                            _artistDashboard?.Visible = true;
                             _userDashboard.Visible = false;
                             _artistMenuFrame.SetFocus();
                         }
@@ -404,8 +420,8 @@ namespace Muses_Player_Console
                     case 7:
                         if (!_musesService.IsArtist())
                         {
-                            _registerArtistWindow.Visible = true;
-                            _registerArtistWindow.SetFocus();
+                            _registerArtistWindow?.Visible = true;
+                            _registerArtistWindow?.SetFocus();
                         }
                         else
                         {
@@ -415,7 +431,7 @@ namespace Muses_Player_Console
                 }
             };
             
-            _userMainContentFrame.KeyDown += (sender, e) => {
+            _userMainContentFrame.KeyDown += (_, e) => {
                 if (e.KeyCode == Key.CursorLeft)
                 {
                     menuListView.SetFocus();
@@ -423,7 +439,7 @@ namespace Muses_Player_Console
                 }
             };
             
-            menuListView.KeyDown += (sender, e) => {
+            menuListView.KeyDown += (_, e) => {
                 if (e.KeyCode == Key.CursorRight)
                 {
                     _userMainContentFrame.SetFocus();
@@ -431,7 +447,7 @@ namespace Muses_Player_Console
                 }
             };
 
-            _userFooterFrame.KeyDown += (sender, e) =>
+            _userFooterFrame.KeyDown += (_, e) =>
             {
                 if (e.KeyCode == Key.CursorUp)
                 {
@@ -478,9 +494,7 @@ namespace Muses_Player_Console
                 Width = 15
             };
 
-            BtnPlayPause.Accepted += (s, e) => {
-                if (_musesService.CurrentSong == null) return;
-                
+            BtnPlayPause.Accepted += (_, e) => {
                 if (!_musesService.IsPlaying && !_musesService.HasActiveMedia()) 
                 {
                     _musesService.PlaySong();
@@ -493,14 +507,14 @@ namespace Muses_Player_Console
                 e.Handled = true;
             };
 
-            BtnNext.Accepted += (s, e) => {
+            BtnNext.Accepted += (_, e) => {
                 _musesService.StopSong();
                 _musesService.NextSong();
                 _musesService.PlaySong();
                 e.Handled = true;
             };
 
-            BtnPrev.Accepted += (s, e) => {
+            BtnPrev.Accepted += (_, e) => {
                 _musesService.StopSong();
                 _musesService.PreviousSong();
                 _musesService.PlaySong();
@@ -534,12 +548,12 @@ namespace Muses_Player_Console
             
             var btnCancel = new Button() { Title = "Cancel", X = 2, Y = 6 };
 
-            btnAccept.Accepted += (s, e) =>
+            btnAccept.Accepted += (_, _) =>
             {
-                string pName = txtName.Text.ToString().Trim();
+                string pName = txtName.Text.Trim();
                 bool isFav = checkFav.Value == CheckState.Checked;
                 
-                if (_musesService.CreateNewPlaylist(pName, _musesService.User.UserID, isFav))
+                if (_musesService.User.UserId != null && _musesService.CreateNewPlaylist(pName, _musesService.User.UserId, isFav))
                 {
                     txtName.Text = "";
                     checkFav.Value = CheckState.UnChecked;
@@ -552,7 +566,7 @@ namespace Muses_Player_Console
                 }
             };
 
-            btnCancel.Accepted += (s, e) =>
+            btnCancel.Accepted += (_, _) =>
             {
                 txtName.Text = "";
                 checkFav.Value = CheckState.UnChecked;
@@ -584,10 +598,10 @@ namespace Muses_Player_Console
             
             var btnCancel = new Button() { Title = "Cancel", X = 2, Y = 8 };
 
-            btnAccept.Accepted += (s, e) =>
+            btnAccept.Accepted += (_, _) =>
             {
-                string aName = txtName.Text.ToString().Trim();
-                string aBio = txtBio.Text.ToString().Trim();
+                string aName = txtName.Text.Trim();
+                string aBio = txtBio.Text.Trim();
                 
                 if(_musesService.AddNewArtist(aName, aBio, ""))
                 {
@@ -602,7 +616,7 @@ namespace Muses_Player_Console
                 }
             };
 
-            btnCancel.Accepted += (s, e) =>
+            btnCancel.Accepted += (_, _) =>
             {
                 txtName.Text = "";
                 txtBio.Text = "";
@@ -644,20 +658,22 @@ namespace Muses_Player_Console
              };
              menuListView.SetSource(menuItems);
 
-             menuListView.Accepted += (s, e) =>
+             menuListView.Accepted += (_, _) =>
              {
                  int idx = menuListView.SelectedItem ?? -1;
                  switch (idx)
                  {
                     case 0:
                         _musesService.SwitchToUserMode();
-                        _userDashboard.Visible = true;
+                        _userDashboard?.Visible = true;
                         _artistDashboard.Visible = false;
                         _userMenuFrame.SetFocus();
                         break;
                     case 1:
-                        _musesService.GetArtistSongs(_musesService.Artist.ArtistID);
-                        RenderSongs_DeleteSong(_musesService.Artist.MySongs, _artistMainContentFrame);
+                        if (_musesService.Artist.ArtistId != null)
+                            _musesService.GetArtistSongs(_musesService.Artist.ArtistId);
+                        if (_musesService.Artist.MySongs != null)
+                            RenderSongs_DeleteSong(_musesService.Artist.MySongs, _artistMainContentFrame);
                         break;
                     case 2:
                         RenderArtistInfo(_musesService.Artist, _artistMainContentFrame);
@@ -671,13 +687,13 @@ namespace Muses_Player_Console
                         RenderArtists(_musesService.Artists, _artistMainContentFrame);
                         break;
                     case 5:
-                        _createSongWindow.Visible = true;
-                        _createSongWindow.SetFocus();
+                        _createSongWindow?.Visible = true;
+                        _createSongWindow?.SetFocus();
                         break;
                  }
              };
              
-             _artistMainContentFrame.KeyDown += (sender, e) => {
+             _artistMainContentFrame.KeyDown += (_, e) => {
                  if (e.KeyCode == Key.CursorLeft)
                  {
                      menuListView.SetFocus();
@@ -685,10 +701,10 @@ namespace Muses_Player_Console
                  }
              };
             
-             menuListView.KeyDown += (sender, e) => {
+             menuListView.KeyDown += (_, e) => {
                  if (e.KeyCode == Key.CursorRight)
                  {
-                     _artistMainContentFrame.SetFocus();;
+                     _artistMainContentFrame.SetFocus();
                      e.Handled = true;
                  }
              };
@@ -732,33 +748,33 @@ namespace Muses_Player_Console
             
             var btnAccept = new Button() { Title = "Accept", X = Pos.Center(), Y = 11 };
 
-            btnAccept.Accepted += (s, e) =>
+            btnAccept.Accepted += (_, _) =>
             {
                 try
                 {
-                    string sTitle = txtTitle.Text.ToString().Trim();
-                    string sAltTitle = txtAltTitle.Text.ToString().Trim();
-                    int iDuration = Int32.Parse(txtDuration.Text.ToString().Trim());
-                    DateTime dReleaseDate = DateTime.Parse(txtReleaseDate.Text.ToString().Trim());
-                    string sArtistId;
-                    if (string.IsNullOrEmpty(txtArtistId.Text.ToString().Trim()))
+                    string sTitle = txtTitle.Text.Trim();
+                    string sAltTitle = txtAltTitle.Text.Trim();
+                    int iDuration = Int32.Parse(txtDuration.Text.Trim());
+                    DateTime dReleaseDate = DateTime.Parse(txtReleaseDate.Text.Trim());
+                    string? sArtistId;
+                    if (string.IsNullOrEmpty(txtArtistId.Text.Trim()))
                     {
-                        sArtistId = _musesService.Artist.ArtistID;
+                        sArtistId = _musesService.Artist.ArtistId;
                     }
                     else
                     {
-                        sArtistId = _musesService.Artist.ArtistID + ',' + txtArtistId.Text.ToString().Trim();
+                        sArtistId = _musesService.Artist.ArtistId + ',' + txtArtistId.Text.Trim();
                     }
 
-                    string sCategoryID = txtCategoryId.Text.ToString().Trim();
-                    string sAudioUrl = txtAudioUrl.Text.ToString().Trim();
+                    string sCategoryId = txtCategoryId.Text.Trim();
+                    string sAudioUrl = txtAudioUrl.Text.Trim();
 
                     MessageBox.Query(_app, "Warning", $"Title: {sTitle}\nAltTitle: {sAltTitle}\n" +
                                                       $"Duration: {iDuration} seconds\nRelease Date: {dReleaseDate.ToShortDateString()}\n" +
-                                                      $"ArtistID: {sArtistId}\nCategoryID: {sCategoryID}\n" +
+                                                      $"ArtistID: {sArtistId}\nCategoryID: {sCategoryId}\n" +
                                                       $"AudioURL: {sAudioUrl}", "OK");
 
-                    if (_musesService.CreateNewSong(sTitle, sAltTitle, iDuration, dReleaseDate, sArtistId, sCategoryID,
+                    if (sArtistId != null && _musesService.CreateNewSong(sTitle, sAltTitle, iDuration, dReleaseDate, sArtistId, sCategoryId,
                             sAudioUrl))
                     {
                         txtTitle.Text = "";
@@ -801,7 +817,7 @@ namespace Muses_Player_Console
                 BorderStyle = LineStyle.None
             };
 
-            Button BtnReturnToLogin = new Button()
+            Button btnReturnToLogin = new Button()
             {
                 Title = "Return to Login",
                 X = 0,
@@ -809,26 +825,26 @@ namespace Muses_Player_Console
                 Width = 30
             };
             
-            _guestMainContentFrame.KeyDown += (sender, e) => {
+            _guestMainContentFrame.KeyDown += (_, e) => {
                 if (e.KeyCode == Key.CursorDown)
                 {
-                    BtnReturnToLogin.SetFocus();
+                    btnReturnToLogin.SetFocus();
                     e.Handled = true; 
                 }
             };
 
-            BtnReturnToLogin.Accepted += (s, e) =>
+            btnReturnToLogin.Accepted += (_, _) =>
             {
-                _loginWindow.Visible = true;
+                _loginWindow?.Visible = true;
                 _guestDashboard.Visible = false;
-                _loginWindow.SetFocus();
+                _loginWindow?.SetFocus();
             };
                    
             
             _musesService.GetAllSongs();
             RenderSongs(_musesService.Songs, _guestMainContentFrame);
             
-            _guestMenuFrame.Add(BtnReturnToLogin);
+            _guestMenuFrame.Add(btnReturnToLogin);
             _guestDashboard.Add(_guestMenuFrame, _guestMainContentFrame);
         }
 
@@ -861,7 +877,7 @@ namespace Muses_Player_Console
                 if (includeAudioUrl)
                 {
                     tableData.Rows.Add(
-                        song.SongID,
+                        song.SongId,
                         song.Title,
                         song.AltTitle,
                         song.ArtistNames,
@@ -869,13 +885,13 @@ namespace Muses_Player_Console
                         song.PlayCount,
                         song.ReleaseDate,
                         duration,
-                        song.AudioURL
+                        song.AudioUrl
                     );
                 }
                 else
                 {
                     tableData.Rows.Add(
-                        song.SongID,
+                        song.SongId,
                         song.Title,
                         song.AltTitle,
                         song.ArtistNames,
@@ -902,7 +918,7 @@ namespace Muses_Player_Console
             foreach (var artist in artistsToRender)
             {
                 tableData.Rows.Add(
-                    artist.ArtistID,
+                    artist.ArtistId,
                     artist.ArtistName,
                     artist.Bio
                 );
@@ -924,7 +940,7 @@ namespace Muses_Player_Console
             foreach (var playlist in playlistsToRender)
             {
                 tableData.Rows.Add(
-                    playlist.PlaylistID,
+                    playlist.PlaylistId,
                     playlist.PlaylistName,
                     playlist.CreatedDate,
                     playlist.IsFavorite
@@ -946,7 +962,7 @@ namespace Muses_Player_Console
             foreach (var category in categoriesToRender)
             {
                 tableData.Rows.Add(
-                    category.CategoryID,
+                    category.CategoryId,
                     category.CategoryName
                 );
             }
@@ -977,17 +993,18 @@ namespace Muses_Player_Console
                 Width = Dim.Fill(), Height = Dim.Fill(),
                 FullRowSelect = true
             };
+
+            var songsToRender = initialSongs.ToList();
+            UpdateTableSongData(songsToRender, tableView);
             
-            UpdateTableSongData(initialSongs, tableView);
-            
-            txtSearch.KeyDown += (s, e) => {
+            txtSearch.KeyDown += (_, e) => {
                 if (e.KeyCode == Key.Enter)
                 {
-                    string keyword = txtSearch.Text.ToString().Trim();
+                    string keyword = txtSearch.Text.Trim();
                     
                     if (string.IsNullOrWhiteSpace(keyword))
                     {
-                        UpdateTableSongData(initialSongs, tableView);
+                        UpdateTableSongData(songsToRender, tableView);
                     }
                     else
                     {
@@ -1028,23 +1045,24 @@ namespace Muses_Player_Console
                 Width = Dim.Fill(), Height = Dim.Fill(),
                 FullRowSelect = true
             };
-            
-            DataTable _currentTable = UpdateTableSongData(initialSongs, tableView, includeAudioUrl: true);
+
+            var songsToRender = initialSongs.ToList();
+            DataTable currentTable = UpdateTableSongData(songsToRender, tableView, includeAudioUrl: true);
             
             // Find song by keyword
-            txtSearch.KeyDown += (s, e) => {
+            txtSearch.KeyDown += (_, e) => {
                 if (e.KeyCode == Key.Enter)
                 {
-                    string keyword = txtSearch.Text.ToString().Trim();
+                    string keyword = txtSearch.Text.Trim();
                     
                     if (string.IsNullOrWhiteSpace(keyword))
                     {
-                        _currentTable = UpdateTableSongData(initialSongs, tableView, includeAudioUrl: true);
+                        currentTable = UpdateTableSongData(songsToRender, tableView, includeAudioUrl: true);
                     }
                     else
                     {
                         List<Song> filteredSongs = _musesService.FindSong(keyword);
-                        _currentTable = UpdateTableSongData(filteredSongs, tableView, includeAudioUrl: true);
+                        currentTable = UpdateTableSongData(filteredSongs, tableView, includeAudioUrl: true);
                     }
                     
                     tableView.SetFocus(); 
@@ -1058,21 +1076,22 @@ namespace Muses_Player_Console
             };
             
             // Add song to queue
-            tableView.KeyDown += (s, e) => {
+            tableView.KeyDown += (_, e) => {
                 if (e.KeyCode == Key.Enter)
                 {
                     var selectedCells = tableView.GetAllSelectedCells();
-                    if (selectedCells.Any() && _currentTable != null)
+                    var enumerable = selectedCells.ToList();
+                    if (enumerable.Any())
                     {
-                        int row = selectedCells.First().Y; 
+                        int row = enumerable.First().Y; 
                         
-                        if (row >= 0 && row < _currentTable.Rows.Count)
+                        if (row >= 0 && row < currentTable.Rows.Count)
                         {
-                            string songId = _currentTable.Rows[row]["SongID"]?.ToString();
+                            string? songId = currentTable.Rows[row]["SongID"].ToString();
                             
                             if (!string.IsNullOrEmpty(songId))
                             {
-                                var selectedSong = _musesService.Songs.FirstOrDefault(x => x.SongID == songId);
+                                var selectedSong = _musesService.Songs.FirstOrDefault(x => x.SongId == songId);
 
                                 if (selectedSong != null)
                                 {
@@ -1087,21 +1106,22 @@ namespace Muses_Player_Console
             };
             
             // Add song to playlist
-            tableView.KeyDown += (s, e) => {
+            tableView.KeyDown += (_, e) => {
                 if (e.KeyCode == Key.A)
                 {
                     var selectedCells = tableView.GetAllSelectedCells();
-                    if (selectedCells.Any() && _currentTable != null)
+                    var enumerable = selectedCells.ToList();
+                    if (enumerable.Any())
                     {
-                        int row = selectedCells.First().Y; 
+                        int row = enumerable.First().Y; 
                         
-                        if (row >= 0 && row < _currentTable.Rows.Count)
+                        if (row >= 0 && row < currentTable.Rows.Count)
                         {
-                            string songId = _currentTable.Rows[row]["SongID"]?.ToString();
+                            string? songId = currentTable.Rows[row]["SongID"].ToString();
                             
                             if (!string.IsNullOrEmpty(songId))
                             {
-                                var selectedSong = _musesService.Songs.FirstOrDefault(x => x.SongID == songId);
+                                var selectedSong = _musesService.Songs.FirstOrDefault(x => x.SongId == songId);
 
                                 if (selectedSong != null)
                                 {
@@ -1109,14 +1129,14 @@ namespace Muses_Player_Console
                                     var playlists = _musesService.Playlists;
                                     var playlistNames = playlists.Select(p => p.PlaylistName).ToArray();
 
-                                    int? selectedIndex = MessageBox.Query(_app, "Add to Playlist", "Select a playlist to add:", playlistNames);
+                                    int? selectedIndex = MessageBox.Query(_app, "Add to Playlist", "Select a playlist to add:", playlistNames!);
                                     
                                     int selectedIndexInt = selectedIndex ?? -1;
                                     
                                     if (selectedIndexInt >= 0 && selectedIndex < playlists.Count)
                                     {
                                         var selectedPlaylist = playlists[selectedIndexInt];
-                                        if (_musesService.AddSongToPlaylist(selectedPlaylist.PlaylistID, selectedSong.SongID))
+                                        if (selectedPlaylist.PlaylistId != null && selectedSong.SongId != null && _musesService.AddSongToPlaylist(selectedPlaylist.PlaylistId, selectedSong.SongId))
                                         {
                                             MessageBox.Query(_app, "Success", $"Added {selectedSong.Title} to {selectedPlaylist.PlaylistName}!", "OK");
                                         }
@@ -1153,34 +1173,36 @@ namespace Muses_Player_Console
                 Width = Dim.Fill(), Height = Dim.Fill(),
                 FullRowSelect = true
             };
-            
-            DataTable _currentTable = UpdateTableSongData(initialSongs, tableView);
+
+            var songsToRender = initialSongs.ToList();
+            DataTable currentTable = UpdateTableSongData(songsToRender, tableView);
             
             // Table key events for managing i>queue (Delete to remove, Enter to play)
-            tableView.KeyDown += (s, e) =>
+            tableView.KeyDown += (_, e) =>
             {
                 var selectedCells = tableView.GetAllSelectedCells();
-                if (!selectedCells.Any() || _currentTable == null) return;
+                var enumerable = selectedCells.ToList();
+                if (!enumerable.Any()) return;
 
-                int row = selectedCells.First().Y;
-                if (row < 0 || row >= _currentTable.Rows.Count) return;
+                int row = enumerable.First().Y;
+                if (row < 0 || row >= currentTable.Rows.Count) return;
 
-                string songId = _currentTable.Rows[row]["SongID"]?.ToString();
+                string? songId = currentTable.Rows[row]["SongID"].ToString();
                 var selectedSong = _musesService.PlayQueue.ElementAtOrDefault(row);
 
-                if (selectedSong == null || selectedSong.SongID != songId) return;
+                if (selectedSong == null || selectedSong.SongId != songId) return;
 
                 if (e.KeyCode == Key.DeleteChar || e.KeyCode == Key.Backspace)
                 {
                     _musesService.PlayQueue.RemoveAt(row);
-                    _currentTable = UpdateTableSongData(initialSongs, tableView);
+                    currentTable = UpdateTableSongData(songsToRender, tableView);
                     MessageBox.Query(_app, "Play Queue", $"Removed: {selectedSong.Title}", "OK");
                     e.Handled = true;
                 }
 
                 if (e.KeyCode == Key.Enter)
                 {
-                    BtnPlayPause.SetFocus();
+                    BtnPlayPause?.SetFocus();
                     _musesService.CurrentSong = selectedSong;
                     _musesService.CurrentSongIndex = row;
                     e.Handled = true;
@@ -1207,29 +1229,35 @@ namespace Muses_Player_Console
                 Width = Dim.Fill(), Height = Dim.Fill(),
                 FullRowSelect = true
             };
-            
-            DataTable _currentTable = UpdateTableSongData(initialSongs, tableView);
+
+            var songsToRender = initialSongs.ToList();
+            DataTable currentTable = UpdateTableSongData(songsToRender, tableView);
             
             // Delete (Backspace) to delete
-            tableView.KeyDown += (s, e) =>
+            tableView.KeyDown += (_, e) =>
             {
                 var selectedCells = tableView.GetAllSelectedCells();
-                if (!selectedCells.Any() || _currentTable == null) return;
+                var enumerable = selectedCells.ToList();
+                if (!enumerable.Any()) return;
 
-                int row = selectedCells.First().Y;
-                if (row < 0 || row >= _currentTable.Rows.Count) return;
+                int row = enumerable.First().Y;
+                if (row < 0 || row >= currentTable.Rows.Count) return;
 
-                string songId = _currentTable.Rows[row]["SongID"]?.ToString();
-                var selectedSong = _musesService.Artist.MySongs.FirstOrDefault(x => x.SongID == songId);
-
-                if (selectedSong == null || selectedSong.SongID != songId) return;
-
-                if (e.KeyCode == Key.DeleteChar || e.KeyCode == Key.Backspace)
+                string? songId = currentTable.Rows[row]["SongID"].ToString();
+                if (_musesService.Artist.MySongs != null)
                 {
-                    _musesService.DeleteSong(selectedSong.SongID, _musesService.Artist.ArtistID);
-                    _currentTable = UpdateTableSongData(initialSongs, tableView);
-                    MessageBox.Query(_app, "Success", $"Deleted: {selectedSong.Title}", "OK");
-                    e.Handled = true;
+                    var selectedSong = _musesService.Artist.MySongs.FirstOrDefault(x => x.SongId == songId);
+
+                    if (selectedSong == null || selectedSong.SongId != songId) return;
+
+                    if (e.KeyCode == Key.DeleteChar || e.KeyCode == Key.Backspace)
+                    {
+                        if (selectedSong.SongId != null && _musesService.Artist.ArtistId != null)
+                            _musesService.DeleteSong(selectedSong.SongId, _musesService.Artist.ArtistId);
+                        currentTable = UpdateTableSongData(songsToRender, tableView);
+                        MessageBox.Query(_app, "Success", $"Deleted: {selectedSong.Title}", "OK");
+                        e.Handled = true;
+                    }
                 }
             };
 
@@ -1289,26 +1317,29 @@ namespace Muses_Player_Console
                 ShadowStyle = ShadowStyles.None
             };
 
-            DataTable _currentTable = UpdateTablePlaylistData(playlists, tableView);
+            DataTable currentTable = UpdateTablePlaylistData(playlists, tableView);
 
             // Table key events for managing i>queue (Delete to remove, Enter to play)
-            tableView.KeyDown += (s, e) =>
+            tableView.KeyDown += (_, e) =>
             {
                 var selectedCells = tableView.GetAllSelectedCells();
-                if (!selectedCells.Any() || _currentTable == null) return;
+                var enumerable = selectedCells.ToList();
+                if (!enumerable.Any()) return;
 
-                int row = selectedCells.First().Y;
-                if (row < 0 || row >= _currentTable.Rows.Count) return;
+                int row = enumerable.First().Y;
+                if (row < 0 || row >= currentTable.Rows.Count) return;
 
-                string playlistId = _currentTable.Rows[row]["PlaylistID"]?.ToString();
-                var selectedPlaylist = _musesService.Playlists.FirstOrDefault(x => x.PlaylistID == playlistId);
+                string? playlistId = currentTable.Rows[row]["PlaylistID"].ToString();
+                var selectedPlaylist = _musesService.Playlists.FirstOrDefault(x => x.PlaylistId == playlistId);
 
                 if (selectedPlaylist == null) return;
 
                 if (e.KeyCode == Key.DeleteChar || e.KeyCode == Key.Backspace)
                 {
-                    _musesService.DeletePlaylist(playlistId, _musesService.User.UserID);
-                    _currentTable = UpdateTablePlaylistData(_musesService.Playlists, tableView);
+                    if (playlistId != null)
+                        if (_musesService.User.UserId != null)
+                            _musesService.DeletePlaylist(playlistId, _musesService.User.UserId);
+                    currentTable = UpdateTablePlaylistData(_musesService.Playlists, tableView);
                     MessageBox.Query(_app, "Playlists", $"Deleted: {selectedPlaylist.PlaylistName}", "OK");
                     e.Handled = true;
                 }
@@ -1323,7 +1354,7 @@ namespace Muses_Player_Console
             };
             
             // Space to see song list
-            tableView.KeyDown += (s, e) =>
+            tableView.KeyDown += (_, e) =>
             {
                 if (e.KeyCode != Key.Space)
                 {
@@ -1331,18 +1362,19 @@ namespace Muses_Player_Console
                 }
                 
                 var selectedCells = tableView.GetAllSelectedCells();
-                
-                if (selectedCells.Any() && _currentTable != null)
+
+                var enumerable = selectedCells.ToList();
+                if (enumerable.Any())
                 {
-                    int row = selectedCells.First().Y; 
+                    int row = enumerable.First().Y; 
                     
-                    if (row >= 0 && row < _currentTable.Rows.Count)
+                    if (row >= 0 && row < currentTable.Rows.Count)
                     {
-                        string playlistId = _currentTable.Rows[row]["PlaylistID"]?.ToString();
+                        string? playlistId = currentTable.Rows[row]["PlaylistID"].ToString();
                         
                         if (!string.IsNullOrEmpty(playlistId))
                         {
-                            var selectedPlaylist = _musesService.Playlists.FirstOrDefault(x => x.PlaylistID == playlistId);
+                            var selectedPlaylist = _musesService.Playlists.FirstOrDefault(x => x.PlaylistId == playlistId);
 
                             if (selectedPlaylist != null)
                             {
@@ -1355,11 +1387,11 @@ namespace Muses_Player_Console
             };
             
             // A to create playlist
-            btnCreatePlaylist.Accepted += (s, e) =>
+            btnCreatePlaylist.Accepted += (_, _) =>
             {
-                _createPlaylistWindow.Visible = true;
-                _createPlaylistWindow.SetFocus();
-                _currentTable = UpdateTablePlaylistData(_musesService.Playlists, tableView);
+                _createPlaylistWindow?.Visible = true;
+                _createPlaylistWindow?.SetFocus();
+                currentTable = UpdateTablePlaylistData(_musesService.Playlists, tableView);
             };
 
             tableContainer.Add(tableView, btnCreatePlaylist);
@@ -1398,61 +1430,65 @@ namespace Muses_Player_Console
                 FullRowSelect = true
             };
 
-            var songs = _musesService.GetPlaylistSongs(playlist.PlaylistID);
-            DataTable _currentTable = UpdateTableSongData(songs, tableView);
-
-            btnReturn.Accepted += (s, e) =>
+            if (playlist.PlaylistId != null)
             {
-                RenderPlaylists(_musesService.Playlists, targetContentFrame);
-                e.Handled = true;
-            };
+                var songs = _musesService.GetPlaylistSongs(playlist.PlaylistId);
+                DataTable currentTable = UpdateTableSongData(songs, tableView);
 
-            btnReturn.KeyDown += (s, e) =>
-            {
-                if (e.KeyCode == Key.CursorDown)
+                btnReturn.Accepted += (_, e) =>
                 {
-                    tableView.SetFocus();
+                    RenderPlaylists(_musesService.Playlists, targetContentFrame);
                     e.Handled = true;
-                }
-            };
+                };
+
+                btnReturn.KeyDown += (_, e) =>
+                {
+                    if (e.KeyCode == Key.CursorDown)
+                    {
+                        tableView.SetFocus();
+                        e.Handled = true;
+                    }
+                };
             
-            tableView.KeyDown += (s, e) =>
-            {
-                if (e.KeyCode == Key.CursorUp)
+                tableView.KeyDown += (_, e) =>
                 {
-                    btnReturn.SetFocus();
-                    e.Handled = true;
-                }
+                    if (e.KeyCode == Key.CursorUp)
+                    {
+                        btnReturn.SetFocus();
+                        e.Handled = true;
+                    }
                 
-                // Delete song from playlist
-                if (e.KeyCode == Key.DeleteChar || e.KeyCode == Key.Backspace)
-                {
-                    var selectedCells = tableView.GetAllSelectedCells();
-                    if (!selectedCells.Any() || _currentTable == null) return;
-
-                    int row = selectedCells.First().Y;
-                    if (row < 0 || row >= _currentTable.Rows.Count) return;
-
-                    string songId = _currentTable.Rows[row]["SongID"]?.ToString();
-                    if (string.IsNullOrEmpty(songId)) return;
-
-                    var selectedSongTitle = _currentTable.Rows[row]["Title"]?.ToString() ?? songId;
-
-                    if (_musesService.RemoveSongFromPlaylist(playlist.PlaylistID, songId, _musesService.User.UserID))
+                    // Delete song from playlist
+                    if (e.KeyCode == Key.DeleteChar || e.KeyCode == Key.Backspace)
                     {
-                        songs = _musesService.GetPlaylistSongs(playlist.PlaylistID);
-                        _currentTable = UpdateTableSongData(songs, tableView);
-                        MessageBox.Query(_app, "Playlist Songs", $"Removed: {selectedSongTitle}", "OK");
-                    }
-                    else
-                    {
-                        MessageBox.Query(_app, "Error", $"Failed to remove: {selectedSongTitle}", "OK");
-                    }
+                        var selectedCells = tableView.GetAllSelectedCells();
+                        var enumerable = selectedCells.ToList();
+                        if (!enumerable.Any()) return;
 
-                    e.Handled = true;
-                }
-            };
-            
+                        int row = enumerable.First().Y;
+                        if (row < 0 || row >= currentTable.Rows.Count) return;
+
+                        string? songId = currentTable.Rows[row]["SongID"].ToString();
+                        if (string.IsNullOrEmpty(songId)) return;
+
+                        var selectedSongTitle = currentTable.Rows[row]["Title"].ToString() ?? songId;
+
+                        if (_musesService.User.UserId != null && _musesService.RemoveSongFromPlaylist(playlist.PlaylistId, songId, _musesService.User.UserId))
+                        {
+                            songs = _musesService.GetPlaylistSongs(playlist.PlaylistId);
+                            currentTable = UpdateTableSongData(songs, tableView);
+                            MessageBox.Query(_app, "Playlist Songs", $"Removed: {selectedSongTitle}", "OK");
+                        }
+                        else
+                        {
+                            MessageBox.Query(_app, "Error", $"Failed to remove: {selectedSongTitle}", "OK");
+                        }
+
+                        e.Handled = true;
+                    }
+                };
+            }
+
 
             tableContainer.Add(tableView);
             targetContentFrame.Add(btnReturn, tableContainer);
@@ -1485,17 +1521,18 @@ namespace Muses_Player_Console
                 FullRowSelect = true
             };
 
-            UpdateTableCategoryData(categories, tableView);
+            var categoriesToRender = categories.ToList();
+            UpdateTableCategoryData(categoriesToRender, tableView);
 
-            txtSearch.KeyDown += (s, e) =>
+            txtSearch.KeyDown += (_, e) =>
             {
                 if (e.KeyCode == Key.Enter)
                 {
-                    string keyword = txtSearch.Text.ToString().Trim();
+                    string keyword = txtSearch.Text.Trim();
 
                     if (string.IsNullOrWhiteSpace(keyword))
                     {
-                        UpdateTableCategoryData(categories, tableView);
+                        UpdateTableCategoryData(categoriesToRender, tableView);
                     }
                     else
                     {
@@ -1525,28 +1562,37 @@ namespace Muses_Player_Console
             _musesService.OnSongChanged += (song) => {
                 _app.Invoke(() => {
                     string title = $"🎵 Playing: {song.Title} - {song.ArtistNames}";
-                    LblNowPlaying.Text = title.Length > 35 ? title.Substring(0, 32) + "..." : title;
-            
-                    LblNowPlaying.SetNeedsDraw();
-                    LblNowPlaying.SuperView?.SetNeedsDraw();
+                    if (LblNowPlaying != null)
+                    {
+                        LblNowPlaying.Text = title.Length > 35 ? title.Substring(0, 32) + "..." : title;
+
+                        LblNowPlaying.SetNeedsDraw();
+                        LblNowPlaying.SuperView?.SetNeedsDraw();
+                    }
                 });
             };
 
             _musesService.OnPlayStateChanged += (isPlaying) => {
                 _app.Invoke(() => {
-                    BtnPlayPause.Title = isPlaying ? " || " : " > ";
-            
-                    BtnPlayPause.SetNeedsDraw();
-                    BtnPlayPause.SuperView?.SetNeedsDraw();
+                    if (BtnPlayPause != null)
+                    {
+                        BtnPlayPause.Title = isPlaying ? " || " : " > ";
+
+                        BtnPlayPause.SetNeedsDraw();
+                        BtnPlayPause.SuperView?.SetNeedsDraw();
+                    }
                 });
             };
     
             _musesService.OnTimeUpdated += (timeStr) => {
                 _app.Invoke(() => {
-                    LblTime.Text = timeStr;
-            
-                    LblTime.SetNeedsDraw();
-                    LblTime.SuperView?.SetNeedsDraw();
+                    if (LblTime != null)
+                    {
+                        LblTime.Text = timeStr;
+
+                        LblTime.SetNeedsDraw();
+                        LblTime.SuperView?.SetNeedsDraw();
+                    }
                 });
             };
         }
