@@ -85,7 +85,13 @@ public class MusesService
         Artists.Clear();
         Categories.Clear();
         
-        CurrentPlaylist = null;
+        CurrentSong = new Song();
+        CurrentPlaylist = new Playlist();
+        
+        CurrentSongIndex = 0;
+        IsPlaying = false;
+        _playedTime = TimeSpan.Zero;
+        
         PlayQueue.Clear();
         
         User = new User();
@@ -929,11 +935,11 @@ public class MusesService
         // Check current user is artist
         SqlConnection conn = new SqlConnection(ConnectionString);
         bool isArtist = false;
-        string query = "SELECT @IsArtist = dbo.fn_IsUserAnArtist(@UserID)";
+
         try
         {
             conn.Open();
-            using SqlCommand cmd = new SqlCommand(query, conn);
+            using SqlCommand cmd = new SqlCommand("SELECT @IsArtist = dbo.fn_IsUserAnArtist(@UserID);", conn);
             cmd.Parameters.AddWithValue("@UserID", User.UserID);
             SqlParameter isArtistParam = new SqlParameter("@IsArtist", System.Data.SqlDbType.Bit)
             {
@@ -943,6 +949,7 @@ public class MusesService
             cmd.ExecuteNonQuery();
 
             isArtist = (bool)isArtistParam.Value;
+            System.IO.File.AppendAllText("muses_debug.log", $"[INFO] Checked IsArtist for user ID: {User.UserID} - Result: {isArtist} at {DateTime.UtcNow}\n");
         }
         catch (Exception ex)
         {

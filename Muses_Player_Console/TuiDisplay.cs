@@ -402,14 +402,14 @@ namespace Muses_Player_Console
                         }
                         break;
                     case 7:
-                        if (_musesService.IsArtist())
-                        {
-                            MessageBox.Query(_app, "Error", "You are already an Artist!", "OK");
-                        }
-                        else
+                        if (!_musesService.IsArtist())
                         {
                             _registerArtistWindow.Visible = true;
                             _registerArtistWindow.SetFocus();
+                        }
+                        else
+                        {
+                            MessageBox.Query(_app, "Error", "You are already an Artist!", "OK");
                         }
                         break;
                 }
