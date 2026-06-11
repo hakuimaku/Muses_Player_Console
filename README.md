@@ -54,7 +54,7 @@ Người dùng sau khi đăng nhập có thể:
 - Xóa playlist
 - Phát nhạc từ playlist hoặc bài hát được chọn
 - Thay đổi thứ tự bài hát trong playlist (chưa làm)
-- Tạo tài khoản Artist (chưa làm)
+- Tạo tài khoản Artist
 
 ### Artist
 
